@@ -1,0 +1,139 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >
+  Lucienne - Conversational Website & SEO Copilot.
+  AWS CDS Agentic AI Partner Hackathon (campaign: AWS CDS Agentic AI Hackathon -Sept. 2026).
+  One Lambda serves three channels: EUM two-way SMS/RCS (via SNS), a web chat demo
+  (Function URL), and direct invokes. Reports go out through Amazon SES.
+
+Parameters:
+  ModelId:
+    Type: String
+    Default: us.anthropic.claude-sonnet-4-5-20250929-v1:0
+    Description: Bedrock model for the agent core.
+  ReportFrom:
+    Type: String
+    Description: Verified SES identity used as the From address for developer reports.
+  AllowedReportRecipients:
+    Type: String
+    Default: ""
+    Description: Comma-separated allowlist for report emails while SES is in sandbox. Empty = no restriction.
+  OriginationIdentity:
+    Type: String
+    Default: ""
+    Description: EUM phone number / RCS agent ARN used to send replies. Empty = reply from the number that received the message.
+  PsiApiKey:
+    Type: String
+    Default: ""
+    NoEcho: true
+    Description: Google PageSpeed Insights API key for the core_web_vitals tool.
+
+Resources:
+  SessionsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "${AWS::StackName}-sessions"
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: session_id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: session_id
+          KeyType: HASH
+      TimeToLiveSpecification:
+        AttributeName: expires_at
+        Enabled: true
+
+  InboundTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub "${AWS::StackName}-inbound"
+
+  FunctionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal: { Service: lambda.amazonaws.com }
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: lucienne
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: [ "bedrock:InvokeModel", "bedrock:InvokeModelWithResponseStream" ]
+                Resource: "*"
+              - Effect: Allow
+                Action: [ "ses:SendEmail" ]
+                Resource: "*"
+              - Effect: Allow
+                Action: [ "sms-voice:SendTextMessage", "sms-voice:SendMediaMessage" ]
+                Resource: "*"
+              - Effect: Allow
+                Action: [ "dynamodb:GetItem", "dynamodb:PutItem" ]
+                Resource: !GetAtt SessionsTable.Arn
+
+  Function:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-agent"
+      Runtime: python3.12
+      Handler: handler.lambda_handler
+      Role: !GetAtt FunctionRole.Arn
+      MemorySize: 512
+      Timeout: 300
+      Environment:
+        Variables:
+          MODEL_ID: !Ref ModelId
+          SESSIONS_TABLE: !Ref SessionsTable
+          REPORT_FROM: !Ref ReportFrom
+          ALLOWED_REPORT_RECIPIENTS: !Ref AllowedReportRecipients
+          ORIGINATION_IDENTITY: !Ref OriginationIdentity
+          PSI_API_KEY: !Ref PsiApiKey
+      Code:
+        ZipFile: |
+          def lambda_handler(event, context):
+              return {"statusCode": 503, "body": "stub - run deploy.sh to upload the real code"}
+
+  FunctionUrl:
+    Type: AWS::Lambda::Url
+    Properties:
+      TargetFunctionArn: !GetAtt Function.Arn
+      AuthType: NONE
+
+  FunctionUrlPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref Function
+      Action: lambda:InvokeFunctionUrl
+      Principal: "*"
+      FunctionUrlAuthType: NONE
+
+  InboundSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      TopicArn: !Ref InboundTopic
+      Protocol: lambda
+      Endpoint: !GetAtt Function.Arn
+
+  InboundPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref Function
+      Action: lambda:InvokeFunction
+      Principal: sns.amazonaws.com
+      SourceArn: !Ref InboundTopic
+
+Outputs:
+  WebDemoUrl:
+    Description: Public web chat demo (judges can interact here).
+    Value: !GetAtt FunctionUrl.FunctionUrl
+  InboundTopicArn:
+    Description: Point the EUM two-way SMS/RCS configuration at this SNS topic.
+    Value: !Ref InboundTopic
+  FunctionName:
+    Value: !Ref Function

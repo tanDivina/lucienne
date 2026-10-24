@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lucienne</title>
+<meta name="description" content="Lucienne — conversational website & SEO copilot. Drop a link, get clarity.">
+<style>
+  :root {
+    --bg: #faf8f4;
+    --ink: #1f1b16;
+    --muted: #7a7267;
+    --accent: #8a6d1f;
+    --accent-soft: #f0e7d2;
+    --card: #ffffff;
+    --line: #e7e0d4;
+    --me: #efe9dd;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #17140f;
+      --ink: #ece7de;
+      --muted: #9b937f;
+      --accent: #d9b75c;
+      --accent-soft: #2a2416;
+      --card: #201c15;
+      --line: #322c21;
+      --me: #2a251c;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 16px/1.55 "Source Serif 4", Georgia, serif;
+    display: flex; flex-direction: column; min-height: 100dvh;
+  }
+  header {
+    padding: 28px 16px 18px; text-align: center; border-bottom: 1px solid var(--line);
+  }
+  .mark { width: 40px; height: 40px; margin: 0 auto 10px; display: block; }
+  .mark path, .mark circle { stroke: var(--accent); }
+  h1 {
+    margin: 0; font-size: 30px; font-weight: 600; letter-spacing: .04em;
+    font-family: "Cormorant Garamond", Georgia, serif;
+  }
+  .tag { margin: 4px 0 0; color: var(--muted); font-size: 14px; font-style: italic; }
+  main {
+    flex: 1; width: 100%; max-width: 680px; margin: 0 auto; padding: 20px 16px 140px;
+  }
+  .msg { margin: 14px 0; display: flex; }
+  .msg.me { justify-content: flex-end; }
+  .bubble {
+    max-width: 85%; padding: 12px 16px; border-radius: 14px;
+    background: var(--card); border: 1px solid var(--line);
+    white-space: pre-wrap; overflow-wrap: anywhere;
+  }
+  .me .bubble { background: var(--me); }
+  .who {
+    font-size: 11px; letter-spacing: .12em; text-transform: uppercase;
+    color: var(--muted); margin-bottom: 4px; font-family: system-ui, sans-serif;
+  }
+  .thinking .bubble::after {
+    content: ""; display: inline-block; width: 1.2em; text-align: left;
+    animation: dots 1.4s steps(4) infinite;
+  }
+  @keyframes dots { 0% {content:""} 25% {content:"."} 50% {content:".."} 75% {content:"..."} }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 0; }
+  .chip {
+    border: 1px solid var(--line); background: var(--card); color: var(--ink);
+    border-radius: 999px; padding: 7px 14px; font: 14px "Source Serif 4", Georgia, serif;
+    cursor: pointer;
+  }
+  .chip:hover { border-color: var(--accent); }
+  form {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: color-mix(in srgb, var(--bg) 88%, transparent);
+    backdrop-filter: blur(8px); border-top: 1px solid var(--line);
+    padding: 14px 16px calc(14px + env(safe-area-inset-bottom));
+  }
+  .row { max-width: 680px; margin: 0 auto; display: flex; gap: 10px; }
+  input {
+    flex: 1; padding: 12px 16px; border-radius: 12px; border: 1px solid var(--line);
+    background: var(--card); color: var(--ink); font: inherit; min-width: 0;
+  }
+  input:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+  button {
+    padding: 12px 20px; border-radius: 12px; border: none; cursor: pointer;
+    background: var(--accent); color: var(--bg); font: 600 15px system-ui, sans-serif;
+  }
+  button:disabled { opacity: .5; cursor: default; }
+  .note {
+    max-width: 680px; margin: 8px auto 0; color: var(--muted); font-size: 12px;
+    text-align: center; font-family: system-ui, sans-serif;
+  }
+</style>
+</head>
+<body>
+<header>
+  <svg class="mark" viewBox="0 0 48 48" fill="none" aria-hidden="true">
+    <!-- a hand lamp: Lucienne brings light -->
+    <circle cx="24" cy="20" r="9" stroke-width="2"/>
+    <path d="M24 4v5M38 8l-3.5 3.5M44 20h-5M10 8l3.5 3.5M4 20h5" stroke-width="2" stroke-linecap="round"/>
+    <path d="M19 28h10l-1.6 8h-6.8L19 28zM21.5 40h5" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+  </svg>
+  <h1>Lucienne</h1>
+  <p class="tag">Drop me a link. I'll bring some clarity.</p>
+</header>
+
+<main id="log" aria-live="polite"></main>
+
+<form id="f">
+  <div class="row">
+    <input id="inp" placeholder="Paste a website address…" autocomplete="off" autofocus>
+    <button id="send" type="submit">Send</button>
+  </div>
+  <p class="note">Lucienne inspects the page, checks Core Web Vitals, and can email the full developer report. Built on Amazon Bedrock, AWS End User Messaging &amp; Amazon SES.</p>
+</form>
+
+<script>
+const log = document.getElementById('log');
+const f = document.getElementById('f');
+const inp = document.getElementById('inp');
+const send = document.getElementById('send');
+const sid = (crypto.randomUUID ? crypto.randomUUID() : String(Math.random()).slice(2));
+
+function add(who, text, extra) {
+  const m = document.createElement('div');
+  m.className = 'msg ' + (who === 'You' ? 'me' : '') + (extra || '');
+  m.innerHTML = '<div class="bubble"><div class="who"></div><span class="t"></span></div>';
+  m.querySelector('.who').textContent = who;
+  m.querySelector('.t').textContent = text;
+  log.appendChild(m);
+  m.scrollIntoView({behavior: 'smooth', block: 'end'});
+  return m;
+}
+
+function chips(opts) {
+  const c = document.createElement('div');
+  c.className = 'chips';
+  for (const o of opts) {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'chip'; b.textContent = o;
+    b.onclick = () => { inp.value = o; f.requestSubmit(); };
+    c.appendChild(b);
+  }
+  log.appendChild(c);
+}
+
+async function ask(text) {
+  add('You', text);
+  document.querySelectorAll('.chips').forEach(e => e.remove());
+  const wait = add('Lucienne', '', ' thinking');
+  send.disabled = true;
+  try {
+    const r = await fetch('chat', {
+      method: 'POST',
+      headers: {'content-type': 'application/json'},
+      body: JSON.stringify({session_id: sid, message: text})
+    });
+    const data = await r.json();
+    wait.classList.remove('thinking');
+    wait.querySelector('.t').textContent = data.reply || data.error || 'Something went quiet on my end — try once more?';
+  } catch (e) {
+    wait.classList.remove('thinking');
+    wait.querySelector('.t').textContent = 'I could not reach my inspection desk (' + e.message + '). Try again in a moment.';
+  }
+  send.disabled = false;
+  inp.focus();
+}
+
+f.addEventListener('submit', (e) => {
+  e.preventDefault();
+  const text = inp.value.trim();
+  if (!text) return;
+  inp.value = '';
+  ask(text);
+});
+
+add('Lucienne', "Bonjour! I'm Lucienne. Give me a website address and I'll look under the hood — speed, search visibility, the lot — and explain it in plain words.");
+chips(['Audit hero-apps.com', 'What do you check, exactly?']);
+</script>
+</body>
+</html>
