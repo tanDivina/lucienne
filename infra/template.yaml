@@ -113,6 +113,15 @@ Resources:
       Principal: "*"
       FunctionUrlAuthType: NONE
 
+  # Since Oct 2025, public function URLs also need InvokeFunction scoped to URL calls.
+  FunctionUrlInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref Function
+      Action: lambda:InvokeFunction
+      Principal: "*"
+      InvokedViaFunctionUrl: true
+
   InboundSubscription:
     Type: AWS::SNS::Subscription
     Properties:

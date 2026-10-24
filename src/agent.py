@@ -56,6 +56,8 @@ knows what not to touch.
 "Want the full developer report by email?" If the user says yes and you have their \
 address, call email_report with a thorough, well-structured HTML report (that report \
 CAN be long and technical - it is for developers).
+- Finish the work within this reply: never say you are "preparing" or "will send" \
+something. Either call the tool now and confirm the result, or ask for what's missing.
 - If a tool errors, say plainly what you could and couldn't check. Never invent data.
 - You audit websites; politely decline unrelated requests and steer back.
 
@@ -146,20 +148,58 @@ _LOCAL_TOOLS = {
 _local_sessions: dict[str, list] = {}  # fallback when no DynamoDB table (CLI/testing)
 
 
+def _sanitize(messages: list) -> list:
+    """Return the history if Bedrock will accept it, else start fresh.
+    Valid: roles strictly alternate starting with 'user', every assistant
+    tool_use is answered by tool_results with matching ids in the next
+    message, and the history ends on an assistant message without tool_use."""
+    def tool_use_ids(msg):
+        return {c["toolUse"]["toolUseId"] for c in msg.get("content", []) if "toolUse" in c}
+
+    def tool_result_ids(msg):
+        return {c["toolResult"]["toolUseId"] for c in msg.get("content", []) if "toolResult" in c}
+
+    if not messages:
+        return []
+    ok = messages[-1].get("role") == "assistant" and not tool_use_ids(messages[-1])
+    for i, msg in enumerate(messages):
+        expected = "user" if i % 2 == 0 else "assistant"
+        if msg.get("role") != expected or not msg.get("content"):
+            ok = False
+            break
+        if expected == "user" and i > 0 and tool_result_ids(msg) != tool_use_ids(messages[i - 1]):
+            ok = False
+            break
+    return messages if ok else []
+
+
+def _truncate(messages: list) -> list:
+    """Keep roughly the last MAX_HISTORY_MESSAGES, cutting only at a plain
+    user-text boundary so tool call/result pairs are never split."""
+    if len(messages) <= MAX_HISTORY_MESSAGES:
+        return messages
+    for i in range(len(messages) - MAX_HISTORY_MESSAGES, len(messages)):
+        m = messages[i]
+        if m.get("role") == "user" and not any("toolResult" in c for c in m.get("content", [])):
+            return messages[i:]
+    return messages[-2:]  # degenerate: keep just the last exchange
+
+
 def _load_history(session_id: str) -> list:
     if not TABLE:
-        return _local_sessions.get(session_id, [])
+        return _sanitize(_local_sessions.get(session_id, []))
     item = _ddb.Table(TABLE).get_item(Key={"session_id": session_id}).get("Item")
-    return json.loads(item["messages"]) if item else []
+    return _sanitize(json.loads(item["messages"])) if item else []
 
 
 def _save_history(session_id: str, messages: list) -> None:
+    messages = _truncate(messages)
     if not TABLE:
-        _local_sessions[session_id] = messages[-MAX_HISTORY_MESSAGES:]
+        _local_sessions[session_id] = messages
         return
     _ddb.Table(TABLE).put_item(Item={
         "session_id": session_id,
-        "messages": json.dumps(messages[-MAX_HISTORY_MESSAGES:]),
+        "messages": json.dumps(messages),
         "expires_at": int(time.time()) + 7 * 24 * 3600,
     })
 
@@ -176,10 +216,11 @@ def run_turn(session_id: str, channel: str, user_text: str) -> str:
             system=[{"text": SYSTEM_PROMPT.format(channel=channel)}],
             messages=messages,
             toolConfig={"tools": TOOLS},
-            inferenceConfig={"maxTokens": 4000, "temperature": 0.4},
+            inferenceConfig={"maxTokens": 16000, "temperature": 0.4},
         )
         msg = resp["output"]["message"]
         messages.append(msg)
+        print(f"round stop={resp.get('stopReason')} blocks={[list(c)[0] for c in msg['content']]}")
 
         if resp.get("stopReason") != "tool_use":
             reply = " ".join(
@@ -204,6 +245,7 @@ def run_turn(session_id: str, channel: str, user_text: str) -> str:
         messages.append({"role": "user", "content": results})
     else:
         reply = "I hit my inspection budget for one message - ask me to continue and I'll pick up where I left off."
+        messages.append({"role": "assistant", "content": [{"text": reply}]})
 
     _save_history(session_id, messages)
     return reply or "(no reply)"
