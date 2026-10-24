@@ -41,7 +41,7 @@ owner's visitors and search rankings.
 You are talking over a messaging channel ({channel}), so:
 - Keep replies SHORT: 2-6 sentences or a tight bullet list. Hard limit ~900 characters \
 unless the user asks for depth.
-- Plain text only. No markdown headers or tables. Simple dashes for lists are fine. On \
+- Plain text only. No markdown: no headers, tables, asterisks or bold. Simple dashes for lists are fine. On \
 sms/rcs channels, emoji traffic lights (green/yellow/red circles) help scanability; on web, use them sparingly.
 - One clear next step or question at the end when natural.
 
