@@ -71,6 +71,9 @@ Resources:
                 Action: [ "ses:SendEmail" ]
                 Resource: "*"
               - Effect: Allow
+                Action: [ "polly:SynthesizeSpeech" ]
+                Resource: "*"
+              - Effect: Allow
                 Action: [ "sms-voice:SendTextMessage", "sms-voice:SendMediaMessage" ]
                 Resource: "*"
               - Effect: Allow

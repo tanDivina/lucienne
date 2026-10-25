@@ -12,6 +12,7 @@ import base64
 import json
 import os
 import pathlib
+import re
 
 import boto3
 
@@ -19,6 +20,7 @@ from agent import run_turn
 
 ORIGINATION_IDENTITY = os.environ.get("ORIGINATION_IDENTITY", "")
 _sms = boto3.client("pinpoint-sms-voice-v2")
+_polly = boto3.client("polly")
 
 _WEB_DIR = pathlib.Path(__file__).parent / "web"
 _ASSET_TYPES = {".png": "image/png", ".jpg": "image/jpeg", ".svg": "image/svg+xml"}
@@ -44,6 +46,27 @@ def _handle_inbound_message(record: dict) -> None:
             MessageBody=chunk,
             MessageType="TRANSACTIONAL",
         )
+
+
+def _speechify(text: str) -> str:
+    """Make a chat reply pleasant to hear: domains instead of URLs, no markdown."""
+    text = re.sub(r"https?://([^/\s]+)\S*", r"\1", text)
+    return re.sub(r"[*_#`]", "", text)
+
+
+def _synthesize(text: str) -> str | None:
+    """Lucienne's voice: Polly's Léa (fr-FR neural) reading English = French accent."""
+    try:
+        resp = _polly.synthesize_speech(
+            Engine="neural",
+            VoiceId=os.environ.get("LUCIENNE_VOICE", "Lea"),
+            OutputFormat="mp3",
+            Text=_speechify(text)[:2900],
+        )
+        return base64.b64encode(resp["AudioStream"].read()).decode()
+    except Exception as exc:  # voice is a garnish; never fail the reply over it
+        print("polly error:", exc)
+        return None
 
 
 def _http_response(status: int, body: str, content_type: str = "application/json") -> dict:
@@ -94,7 +117,12 @@ def _handle_http(event: dict) -> dict:
         except (KeyError, json.JSONDecodeError):
             return _http_response(400, json.dumps({"error": "need session_id and message"}))
         reply = run_turn(session_id=f"web:{session_id}", channel="web", user_text=message)
-        return _http_response(200, json.dumps({"reply": reply}))
+        payload = {"reply": reply}
+        if body.get("speak"):
+            audio = _synthesize(reply)
+            if audio:
+                payload["audio"] = audio
+        return _http_response(200, json.dumps(payload))
 
     return _http_response(404, json.dumps({"error": "not found"}))
 

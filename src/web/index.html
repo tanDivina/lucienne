@@ -43,10 +43,33 @@
   header {
     padding: 28px 16px 18px; text-align: center; border-bottom: 1px solid var(--line);
   }
-  .mark {
-    width: 72px; height: 72px; margin: 0 auto 10px; display: block;
-    border-radius: 50%; border: 2px solid var(--accent-soft);
+  .stage { width: 148px; margin: 0 auto 12px; position: relative; }
+  .stage img {
+    width: 100%; display: block; border-radius: 20px;
+    border: 1px solid var(--line);
+    animation: sway 7s ease-in-out infinite;
+    transform-origin: 50% 100%;
   }
+  @keyframes sway {
+    0%, 100% { transform: rotate(-.7deg) translateY(0); }
+    50% { transform: rotate(.7deg) translateY(-2px); }
+  }
+  @media (prefers-reduced-motion: reduce) { .stage img { animation: none; } }
+  .voicebtn {
+    margin-top: 10px; background: none; border: 1px solid var(--line);
+    border-radius: 999px; padding: 5px 14px 5px 10px; cursor: pointer;
+    color: var(--muted); font: 12px system-ui, sans-serif;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .voicebtn svg { width: 16px; height: 16px; stroke: var(--accent); }
+  .voicebtn.on { border-color: var(--accent); color: var(--ink); }
+  .micbtn {
+    padding: 12px 14px; border-radius: 12px; border: 1px solid var(--line);
+    background: var(--card); cursor: pointer; display: none;
+  }
+  .micbtn svg { width: 20px; height: 20px; stroke: var(--accent); display: block; }
+  .micbtn.listening { outline: 2px solid var(--accent); animation: pulse 1.2s ease-in-out infinite; }
+  @keyframes pulse { 50% { opacity: .55; } }
   .avatar {
     width: 34px; height: 34px; border-radius: 50%; flex: none;
     margin-right: 10px; margin-top: 2px; border: 1px solid var(--line);
@@ -108,19 +131,32 @@
 </head>
 <body>
 <header>
-  <img class="mark" src="assets/avatar.png" alt="Lucienne, a chic French inspector holding a glowing hand lantern" width="72" height="72">
+  <div class="stage">
+    <img id="lulu" src="assets/pose-neutral.png" alt="Lucienne, a chic French inspector holding a glowing hand lantern" width="148" height="148">
+  </div>
   <h1>Lucienne</h1>
   <p class="tag">Drop me a link. I'll bring some clarity.</p>
+  <button id="voice" class="voicebtn" type="button" aria-pressed="true">
+    <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M4 9v6h4l5 4V5L8 9H4z"/><path class="waves" d="M16 9a4 4 0 0 1 0 6M18.5 6.5a7.5 7.5 0 0 1 0 11"/>
+    </svg>
+    <span class="label">Voice on</span>
+  </button>
 </header>
 
 <main id="log" aria-live="polite"></main>
 
 <form id="f">
   <div class="row">
+    <button id="mic" class="micbtn" type="button" aria-label="Speak to Lucienne">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/>
+      </svg>
+    </button>
     <input id="inp" placeholder="Paste a website address…" autocomplete="off" autofocus>
     <button id="send" type="submit">Send</button>
   </div>
-  <p class="note">Lucienne inspects the page, checks Core Web Vitals, and can email the full developer report. Built on Amazon Bedrock, AWS End User Messaging &amp; Amazon SES.</p>
+  <p class="note">Lucienne inspects the page, checks Core Web Vitals, and can email the full developer report. Built on Amazon Bedrock, AWS End User Messaging &amp; Amazon SES — her voice is Amazon Polly.</p>
 </form>
 
 <script>
@@ -129,6 +165,80 @@ const f = document.getElementById('f');
 const inp = document.getElementById('inp');
 const send = document.getElementById('send');
 const sid = (crypto.randomUUID ? crypto.randomUUID() : String(Math.random()).slice(2));
+
+// --- Lucienne lives: blink, sway, speak ---
+const lulu = document.getElementById('lulu');
+const POSES = { n: 'assets/pose-neutral.png', t: 'assets/pose-talk.png', b: 'assets/pose-blink.png' };
+for (const s of Object.values(POSES)) { const i = new Image(); i.src = s; }
+
+let flap = null;
+function startTalking() {
+  stopTalking();
+  flap = setInterval(() => {
+    lulu.src = lulu.src.includes('talk') ? POSES.n : POSES.t;
+  }, 150);
+}
+function stopTalking() {
+  if (flap) clearInterval(flap);
+  flap = null;
+  lulu.src = POSES.n;
+}
+(function blink() {
+  if (!flap) {
+    lulu.src = POSES.b;
+    setTimeout(() => { if (!flap) lulu.src = POSES.n; }, 140);
+  }
+  setTimeout(blink, 2800 + Math.random() * 3500);
+})();
+
+let voiceOn = true;
+try { voiceOn = localStorage.getItem('lucienne-voice') !== 'off'; } catch (e) {}
+const voiceBtn = document.getElementById('voice');
+function renderVoiceBtn() {
+  voiceBtn.classList.toggle('on', voiceOn);
+  voiceBtn.setAttribute('aria-pressed', String(voiceOn));
+  voiceBtn.querySelector('.label').textContent = voiceOn ? 'Voice on' : 'Voice off';
+  voiceBtn.querySelector('.waves').style.display = voiceOn ? '' : 'none';
+}
+voiceBtn.onclick = () => {
+  voiceOn = !voiceOn;
+  if (!voiceOn && player) player.pause();
+  try { localStorage.setItem('lucienne-voice', voiceOn ? 'on' : 'off'); } catch (e) {}
+  renderVoiceBtn();
+};
+renderVoiceBtn();
+
+let player = null;
+function speakReply(b64) {
+  try {
+    if (player) player.pause();
+    player = new Audio('data:audio/mpeg;base64,' + b64);
+    player.onplay = startTalking;
+    player.onended = player.onpause = stopTalking;
+    player.play().catch(stopTalking);
+  } catch (e) { stopTalking(); }
+}
+
+const mic = document.getElementById('mic');
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+if (SR) {
+  mic.style.display = 'block';
+  mic.onclick = () => {
+    const rec = new SR();
+    rec.lang = 'en-US';
+    mic.classList.add('listening');
+    rec.onresult = (e) => {
+      const text = e.results[0][0].transcript.trim();
+      if (text) {
+        voiceOn = true; renderVoiceBtn(); // spoken question -> spoken answer
+        inp.value = text;
+        f.requestSubmit();
+      }
+    };
+    rec.onend = rec.onerror = () => mic.classList.remove('listening');
+    rec.start();
+  };
+}
 
 function add(who, text, extra) {
   const m = document.createElement('div');
@@ -163,11 +273,12 @@ async function ask(text) {
     const r = await fetch('chat', {
       method: 'POST',
       headers: {'content-type': 'application/json'},
-      body: JSON.stringify({session_id: sid, message: text})
+      body: JSON.stringify({session_id: sid, message: text, speak: voiceOn})
     });
     const data = await r.json();
     wait.classList.remove('thinking');
     wait.querySelector('.t').textContent = data.reply || data.error || 'Something went quiet on my end — try once more?';
+    if (data.audio && voiceOn) speakReply(data.audio);
   } catch (e) {
     wait.classList.remove('thinking');
     wait.querySelector('.t').textContent = 'I could not reach my inspection desk (' + e.message + '). Try again in a moment.';
