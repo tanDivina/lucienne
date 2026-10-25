@@ -1,0 +1,292 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lucienne — Website &amp; SEO Copilot</title>
+<meta name="description" content="Lucienne is a conversational website & SEO copilot. Drop her a link and she inspects speed, search visibility and structure — then explains it in plain words.">
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<meta property="og:title" content="Lucienne — Website & SEO Copilot">
+<meta property="og:description" content="Drop me a link. I'll bring some clarity.">
+<meta property="og:image" content="https://lucienne.hero-apps.com/assets/og.jpg">
+<meta property="og:url" content="https://lucienne.hero-apps.com/">
+<meta name="twitter:card" content="summary_large_image">
+<style>
+  :root {
+    --bg: #faf8f4;
+    --ink: #1f1b16;
+    --muted: #7a7267;
+    --accent: #8a6d1f;
+    --accent-soft: #f0e7d2;
+    --card: #ffffff;
+    --line: #e7e0d4;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #17140f;
+      --ink: #ece7de;
+      --muted: #9b937f;
+      --accent: #d9b75c;
+      --accent-soft: #2a2416;
+      --card: #201c15;
+      --line: #322c21;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 17px/1.6 "Source Serif 4", Georgia, serif;
+  }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 0 16px; }
+  h1, h2 { font-family: "Cormorant Garamond", Georgia, serif; font-weight: 600; letter-spacing: .03em; }
+  a { color: var(--accent); }
+
+  /* hero */
+  .hero { display: flex; align-items: center; gap: 40px; padding: 64px 0 48px; }
+  .hero-copy { flex: 1.2; }
+  .hero h1 { font-size: 54px; margin: 0 0 6px; }
+  .hero .tag { font-style: italic; color: var(--muted); font-size: 20px; margin: 0 0 18px; }
+  .hero p.lede { margin: 0 0 28px; max-width: 46ch; }
+  .hero-art { flex: 1; max-width: 340px; }
+  .hero-art img {
+    width: 100%; display: block; border-radius: 24px; border: 1px solid var(--line);
+    animation: sway 7s ease-in-out infinite; transform-origin: 50% 100%;
+  }
+  @keyframes sway {
+    0%, 100% { transform: rotate(-.6deg) translateY(0); }
+    50% { transform: rotate(.6deg) translateY(-3px); }
+  }
+  @media (prefers-reduced-motion: reduce) { .hero-art img { animation: none; } }
+  .cta-row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+  .btn {
+    display: inline-block; padding: 13px 24px; border-radius: 12px; border: none;
+    background: var(--accent); color: var(--bg); text-decoration: none;
+    font: 600 16px system-ui, sans-serif; cursor: pointer;
+  }
+  .btn.ghost {
+    background: none; border: 1px solid var(--line); color: var(--muted); cursor: default;
+    font-weight: 400;
+  }
+
+  section { padding: 44px 0; border-top: 1px solid var(--line); }
+  h2 { font-size: 32px; margin: 0 0 24px; }
+  .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .card {
+    background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 22px;
+  }
+  .card svg { width: 34px; height: 34px; stroke: var(--accent); margin-bottom: 12px; }
+  .card h3 { margin: 0 0 8px; font-size: 19px; }
+  .card p { margin: 0; color: var(--muted); font-size: 15.5px; }
+
+  .channels { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .pill {
+    font: 12px system-ui, sans-serif; letter-spacing: .08em; text-transform: uppercase;
+    border: 1px solid var(--accent); color: var(--accent); border-radius: 999px;
+    padding: 3px 10px; display: inline-block; margin-bottom: 10px;
+  }
+  .pill.soon { border-color: var(--line); color: var(--muted); }
+
+  .arch { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 18px; }
+  .arch svg { width: 100%; height: auto; display: block; }
+  .arch text { font: 13px system-ui, sans-serif; fill: var(--ink); }
+  .arch .dim { fill: var(--muted); font-size: 11.5px; }
+  .arch rect { fill: none; stroke: var(--line); }
+  .arch .hot { stroke: var(--accent); }
+  .arch path { stroke: var(--muted); fill: none; }
+
+  form.waitlist { max-width: 560px; }
+  .frow { display: flex; gap: 10px; flex-wrap: wrap; }
+  .frow input {
+    flex: 1 1 200px; padding: 12px 16px; border-radius: 12px; border: 1px solid var(--line);
+    background: var(--card); color: var(--ink); font: inherit; min-width: 0;
+  }
+  .frow input:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+  .hp { position: absolute; left: -9999px; opacity: 0; }
+  .form-note { color: var(--muted); font-size: 14px; }
+  .thanks { display: none; background: var(--accent-soft); border-radius: 12px; padding: 14px 18px; }
+
+  footer { border-top: 1px solid var(--line); padding: 28px 0 40px; color: var(--muted); font-size: 14.5px; }
+
+  @media (max-width: 760px) {
+    .hero { flex-direction: column-reverse; text-align: center; padding-top: 36px; }
+    .hero h1 { font-size: 42px; }
+    .hero p.lede { margin-left: auto; margin-right: auto; }
+    .cta-row { justify-content: center; }
+    .hero-art { max-width: 240px; }
+    .cards, .channels { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="hero">
+    <div class="hero-copy">
+      <h1>Lucienne</h1>
+      <p class="tag">Drop me a link. I'll bring some clarity.</p>
+      <p class="lede">Lucienne is a conversational website &amp; SEO copilot. Give her an address
+      and she looks under the hood — speed, Core&nbsp;Web&nbsp;Vitals, search visibility, structure —
+      then explains what matters in plain words, and emails your developer the technical details.</p>
+      <div class="cta-row">
+        <a id="talk" class="btn" href="https://3aeprrnzvxpaum6k7vq4qccvd40pcngi.lambda-url.us-east-1.on.aws/">Talk to Lucienne</a>
+        <span class="btn ghost">Text her — soon</span>
+      </div>
+    </div>
+    <div class="hero-art">
+      <img id="lulu" src="assets/pose-neutral.png" alt="Lucienne, a chic French inspector holding a glowing hand lantern" width="340" height="340">
+    </div>
+  </div>
+</div>
+
+<section>
+  <div class="wrap">
+    <h2>What she looks at</h2>
+    <div class="cards">
+      <div class="card">
+        <svg viewBox="0 0 48 48" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M8 34a16 16 0 1 1 32 0"/><path d="M24 34 32 22"/><path d="M6 40h36"/>
+        </svg>
+        <h3>Speed, honestly measured</h3>
+        <p>Real Core Web Vitals from Google PageSpeed — how fast the page paints, how stable it is,
+        how it responds — translated from milliseconds into meaning.</p>
+      </div>
+      <div class="card">
+        <svg viewBox="0 0 48 48" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="21" cy="19" r="11"/><path d="M29 27 40 38"/><path d="M16 19h10M21 14v10"/>
+        </svg>
+        <h3>Search visibility</h3>
+        <p>Titles, descriptions, headings, robots rules and sitemaps — the quiet details
+        that decide whether search engines can find and trust a page.</p>
+      </div>
+      <div class="card">
+        <svg viewBox="0 0 48 48" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="6" y="12" width="36" height="26" rx="4"/><path d="M6 15l18 13 18-13"/>
+        </svg>
+        <h3>The developer report</h3>
+        <p>When you're ready to fix things, she emails a full technical report —
+        findings, evidence and priorities — straight to whoever does the work.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>How to reach her</h2>
+    <div class="channels">
+      <div class="card">
+        <span class="pill">Live now</span>
+        <h3>Web chat</h3>
+        <p>Open the chat, paste an address, and talk it through. Turn her voice on and she'll
+        answer out loud — avec un petit accent.</p>
+      </div>
+      <div class="card">
+        <span class="pill soon">Almost ready</span>
+        <h3>Text message (SMS &amp; RCS)</h3>
+        <p>Text Lucienne a link from your phone and get the audit as a conversation,
+        powered by AWS End User Messaging. Leave your email below and she'll let you know.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>Under the hood</h2>
+    <div class="arch">
+      <svg viewBox="0 0 900 300" role="img" aria-label="Architecture: web chat and SMS/RCS reach a Lambda agent running Claude on Amazon Bedrock, which uses page inspection, robots and sitemap checks and PageSpeed vitals, and answers through Amazon Polly, Amazon SES and DynamoDB session memory.">
+        <rect x="20" y="40" width="170" height="60" rx="10"/>
+        <text x="105" y="66" text-anchor="middle">Web chat</text>
+        <text x="105" y="84" text-anchor="middle" class="dim">Lambda Function URL</text>
+        <rect x="20" y="160" width="170" height="60" rx="10"/>
+        <text x="105" y="186" text-anchor="middle">SMS / RCS</text>
+        <text x="105" y="204" text-anchor="middle" class="dim">End User Messaging + SNS</text>
+        <path d="M190 70 h60 q20 0 24 20 l4 18"/>
+        <path d="M190 190 h60 q20 0 24 -20 l4 -18"/>
+        <rect x="290" y="100" width="220" height="80" rx="10" class="hot"/>
+        <text x="400" y="132" text-anchor="middle">Lucienne — agent loop</text>
+        <text x="400" y="152" text-anchor="middle" class="dim">Claude on Amazon Bedrock, in Lambda</text>
+        <path d="M510 120 h70"/>
+        <path d="M510 140 h70"/>
+        <path d="M510 160 h70"/>
+        <rect x="580" y="96" width="150" height="34" rx="8"/>
+        <text x="655" y="118" text-anchor="middle" class="dim">Page inspection</text>
+        <rect x="580" y="138" width="150" height="34" rx="8"/>
+        <text x="655" y="160" text-anchor="middle" class="dim">Robots &amp; sitemap</text>
+        <rect x="580" y="180" width="150" height="34" rx="8"/>
+        <text x="655" y="202" text-anchor="middle" class="dim">PageSpeed vitals</text>
+        <path d="M400 180 v40"/>
+        <rect x="250" y="230" width="140" height="40" rx="8"/>
+        <text x="320" y="255" text-anchor="middle" class="dim">Amazon Polly — voice</text>
+        <rect x="410" y="230" width="150" height="40" rx="8"/>
+        <text x="485" y="255" text-anchor="middle" class="dim">Amazon SES — reports</text>
+        <rect x="580" y="230" width="150" height="40" rx="8"/>
+        <text x="655" y="255" text-anchor="middle" class="dim">DynamoDB — memory</text>
+      </svg>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>Have her call on your website</h2>
+    <form class="waitlist" id="wl">
+      <div class="frow">
+        <input type="email" id="wl-email" placeholder="you@example.com" required autocomplete="email">
+        <input type="text" id="wl-site" placeholder="yoursite.com (optional)">
+        <input type="text" id="wl-company" class="hp" tabindex="-1" autocomplete="off" aria-hidden="true">
+        <button class="btn" type="submit">Keep me posted</button>
+      </div>
+      <p class="form-note">One email when texting goes live and when she takes on new websites. Nothing else.</p>
+      <p class="thanks" id="wl-thanks">Merci! Lucienne has noted it down — you'll hear from her.</p>
+    </form>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    A <a href="https://hero-apps.com">Hero Apps</a> project · built for the AWS CDS Agentic AI Hackathon ·
+    her lantern is always lit.
+  </div>
+</footer>
+
+<script src="https://hero-inbox-2026.web.app/inbox.js"></script>
+<script>
+// she blinks here too, and lights up when you reach for the chat
+const lulu = document.getElementById('lulu');
+const POSES = { n: 'assets/pose-neutral.png', b: 'assets/pose-blink.png', d: 'assets/pose-delight.png' };
+for (const s of Object.values(POSES)) { const im = new Image(); im.src = s; }
+let delighted = false;
+(function blink() {
+  if (!delighted) {
+    lulu.src = POSES.b;
+    setTimeout(() => { if (!delighted) lulu.src = POSES.n; }, 140);
+  }
+  setTimeout(blink, 2800 + Math.random() * 3500);
+})();
+const talk = document.getElementById('talk');
+talk.addEventListener('mouseenter', () => { delighted = true; lulu.src = POSES.d; });
+talk.addEventListener('mouseleave', () => { delighted = false; lulu.src = POSES.n; });
+
+const wl = document.getElementById('wl');
+wl.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  if (document.getElementById('wl-company').value) return; // honeypot
+  const email = document.getElementById('wl-email').value.trim();
+  const site = document.getElementById('wl-site').value.trim();
+  if (!email) return;
+  try {
+    await HeroInbox.submit({
+      site: 'lucienne.hero-apps.com', form: 'waitlist', email,
+      message: site || undefined, lang: 'en', page: '/', source: 'landing'
+    });
+  } catch (err) { /* she still says thanks; the inbox alert email is the backstop */ }
+  wl.querySelector('.frow').style.display = 'none';
+  wl.querySelector('.form-note').style.display = 'none';
+  document.getElementById('wl-thanks').style.display = 'block';
+  delighted = true; lulu.src = POSES.d;
+});
+</script>
+</body>
+</html>
