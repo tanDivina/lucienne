@@ -8,6 +8,7 @@ Routes three event shapes to the same agent core:
 
 from __future__ import annotations
 
+import base64
 import json
 import os
 import pathlib
@@ -20,6 +21,7 @@ ORIGINATION_IDENTITY = os.environ.get("ORIGINATION_IDENTITY", "")
 _sms = boto3.client("pinpoint-sms-voice-v2")
 
 _WEB_DIR = pathlib.Path(__file__).parent / "web"
+_ASSET_TYPES = {".png": "image/png", ".jpg": "image/jpeg", ".svg": "image/svg+xml"}
 
 
 def _handle_inbound_message(record: dict) -> None:
@@ -65,6 +67,20 @@ def _handle_http(event: dict) -> dict:
         return _http_response(204, "")
 
     if method == "GET":
+        if "/assets/" in path:
+            # basename only: no traversal, no subdirectories
+            asset = _WEB_DIR / "assets" / pathlib.PurePosixPath(path).name
+            if asset.suffix in _ASSET_TYPES and asset.is_file():
+                return {
+                    "statusCode": 200,
+                    "headers": {
+                        "content-type": _ASSET_TYPES[asset.suffix],
+                        "cache-control": "public, max-age=86400",
+                    },
+                    "body": base64.b64encode(asset.read_bytes()).decode(),
+                    "isBase64Encoded": True,
+                }
+            return _http_response(404, "no such asset", "text/plain")
         page = _WEB_DIR / "index.html"
         if page.exists():
             return _http_response(200, page.read_text(), "text/html; charset=utf-8")

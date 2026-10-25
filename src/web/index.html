@@ -5,6 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Lucienne</title>
 <meta name="description" content="Lucienne — conversational website & SEO copilot. Drop a link, get clarity.">
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<meta property="og:title" content="Lucienne">
+<meta property="og:description" content="Drop me a link. I'll bring some clarity. Website & SEO copilot on Amazon Bedrock.">
+<meta property="og:image" content="https://3aeprrnzvxpaum6k7vq4qccvd40pcngi.lambda-url.us-east-1.on.aws/assets/og.jpg">
+<meta name="twitter:card" content="summary_large_image">
 <style>
   :root {
     --bg: #faf8f4;
@@ -37,8 +43,14 @@
   header {
     padding: 28px 16px 18px; text-align: center; border-bottom: 1px solid var(--line);
   }
-  .mark { width: 40px; height: 40px; margin: 0 auto 10px; display: block; }
-  .mark path, .mark circle { stroke: var(--accent); }
+  .mark {
+    width: 72px; height: 72px; margin: 0 auto 10px; display: block;
+    border-radius: 50%; border: 2px solid var(--accent-soft);
+  }
+  .avatar {
+    width: 34px; height: 34px; border-radius: 50%; flex: none;
+    margin-right: 10px; margin-top: 2px; border: 1px solid var(--line);
+  }
   h1 {
     margin: 0; font-size: 30px; font-weight: 600; letter-spacing: .04em;
     font-family: "Cormorant Garamond", Georgia, serif;
@@ -96,12 +108,7 @@
 </head>
 <body>
 <header>
-  <svg class="mark" viewBox="0 0 48 48" fill="none" aria-hidden="true">
-    <!-- a hand lamp: Lucienne brings light -->
-    <circle cx="24" cy="20" r="9" stroke-width="2"/>
-    <path d="M24 4v5M38 8l-3.5 3.5M44 20h-5M10 8l3.5 3.5M4 20h5" stroke-width="2" stroke-linecap="round"/>
-    <path d="M19 28h10l-1.6 8h-6.8L19 28zM21.5 40h5" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
-  </svg>
+  <img class="mark" src="assets/avatar.png" alt="Lucienne, a chic French inspector holding a glowing hand lantern" width="72" height="72">
   <h1>Lucienne</h1>
   <p class="tag">Drop me a link. I'll bring some clarity.</p>
 </header>
@@ -126,7 +133,8 @@ const sid = (crypto.randomUUID ? crypto.randomUUID() : String(Math.random()).sli
 function add(who, text, extra) {
   const m = document.createElement('div');
   m.className = 'msg ' + (who === 'You' ? 'me' : '') + (extra || '');
-  m.innerHTML = '<div class="bubble"><div class="who"></div><span class="t"></span></div>';
+  m.innerHTML = (who === 'You' ? '' : '<img class="avatar" src="assets/avatar.png" alt="" width="34" height="34">') +
+    '<div class="bubble"><div class="who"></div><span class="t"></span></div>';
   m.querySelector('.who').textContent = who;
   m.querySelector('.t').textContent = text;
   log.appendChild(m);
