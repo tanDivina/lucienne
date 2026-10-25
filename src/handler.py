@@ -87,6 +87,15 @@ _SPOKEN = [  # the French voice reads digits and acronyms in French; hand her En
     (r"\bURLs\b", "links"),
     (r"\bURL\b", "link"),
     (r"\bh1\b", "main heading"),
+    (r"\$\s*([\d,]+(?:\.\d+)?)", r"\1 dollars"),
+    (r"\bCWV\b", "Core Web Vitals"),
+    (r"\bEst\.", "Estimated"),  # Léa reads a bare "est" as French for "is"
+    (r"\be\.g\.", "for example"),
+    (r"\bi\.e\.", "that is"),
+    (r"\bvs\b\.?", "versus"),
+    (r"(\d)\s*/\s*(100|10|5)\b", r"\1 out of \2"),
+    (r"(\w)/mo\b", r"\1 per month"),
+    (r"(\w)/yr\b", r"\1 per year"),
     (r"(\d)\s*ms\b", r"\1 milliseconds"),
     (r"(\d)\s*s\b", r"\1 seconds"),
     (r"(\d)\s*(KB|kb)\b", r"\1 kilobytes"),
@@ -119,7 +128,11 @@ def _speech_excerpt(text: str) -> str:
         out = (out + " " + p).strip()
         if len(out) >= 340:
             break
-    return (out or text[:340]) + " ... The full details are in your chat."
+    if not out:  # reply was mostly bullets; never speak a mid-word slice
+        head = text[:340]
+        cut = max(head.rfind(". "), head.rfind("! "), head.rfind("? "), head.rfind(".\n"))
+        out = head[: cut + 1].strip() if cut > 80 else head.rsplit(" ", 1)[0]
+    return out + " ... The full details are in your chat."
 
 
 def _synthesize(text: str) -> str | None:

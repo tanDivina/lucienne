@@ -22,9 +22,25 @@ Lucienne is an autonomous conversational website audit and SEO diagnostic agent.
 Users text a URL via RCS to receive instant technical audits, plain-English advice,
 and developer reports via Amazon SES.
 
+## Stats to quote (verified Oct 25, 2026 — exact wordings + sources)
+- "57% of small businesses have no SEO strategy at all." — UpCity/Pollfish 2022 survey,
+  600 US/CA SMBs (via searchenginejournal.com/no-seo-strategy-2022/438639).
+  Do NOT use the recycled "70%" figure — no traceable source.
+- "Page two of Google gets a fifth of one percent of clicks." — Sistrix, ~80M keywords:
+  position 11 = 0.17% CTR; page one takes 99.1% of organic clicks
+  (sistrix.com/blog/click-probabilities-in-the-google-serps/).
+- "Google's own data: 53% of mobile visits are abandoned if a page takes over
+  3 seconds to load." — Google "The Need for Mobile Speed" (say "Google's own data",
+  not the year — study is 2016). Use when she runs core_web_vitals on screen.
+- "An SEO agency retainer averages around $3,000 a month." — Ahrefs avg $2,819/mo via
+  outerboxdesign.com/articles/seo/seo-pricing-costs; Arc Intermedia ~$3,200/mo.
+  Punchline: "Lucienne is a text message."
+
 ## 3-minute video beats
-1. (0:00) Hook: "Most small-business owners have no idea why their site doesn't
-   show up on Google — and audit dashboards don't help." Show a confusing SEO report.
+1. (0:00) Hook: "57% of small businesses have no SEO strategy — and no wonder:
+   agencies charge three thousand dollars a month, and the reports look like this
+   (confusing dashboard). Meanwhile, page two of Google gets a fifth of one percent
+   of clicks." Then: "Lucienne is a text message."
 2. (0:20) Meet Lucienne: phone in hand, text a URL via RCS/SMS. She answers in
    plain words, ranked by impact.
 3. (1:00) Conversation: follow-up question ("why does that matter?"), quick replies.

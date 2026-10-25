@@ -236,7 +236,10 @@ const mic = document.getElementById('mic');
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 if (SR) {
   mic.style.display = 'block';
+  let listening = false;
   mic.onclick = () => {
+    if (listening) return;
+    listening = true;
     const rec = new SR();
     rec.lang = 'en-US';
     mic.classList.add('listening');
@@ -248,7 +251,7 @@ if (SR) {
         f.requestSubmit();
       }
     };
-    rec.onend = rec.onerror = () => mic.classList.remove('listening');
+    rec.onend = rec.onerror = () => { listening = false; mic.classList.remove('listening'); };
     rec.start();
   };
 }
