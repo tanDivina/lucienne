@@ -48,8 +48,9 @@ flowchart LR
 | Amazon SES | `src/agent.py` — `email_report` tool, `sesv2 SendEmail` |
 | Amazon Bedrock (recommended pairing) | `src/agent.py` — Converse API tool-use loop |
 
-*(AWS End User Messaging Social / WhatsApp is on the roadmap: the channel handler is
-transport-agnostic — WhatsApp inbound arrives over the same SNS pattern.)*
+*(AWS End User Messaging Social / WhatsApp: the handler already parses EUM Social
+webhook events and replies via `SendWhatsAppMessage` — point a linked WABA's event
+destination at the stack's WhatsApp events topic and the channel is live.)*
 
 ## Repository layout
 

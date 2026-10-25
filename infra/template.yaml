@@ -26,6 +26,10 @@ Parameters:
     Default: ""
     NoEcho: true
     Description: Google PageSpeed Insights API key for the core_web_vitals tool.
+  WhatsAppPhoneNumberId:
+    Type: String
+    Default: ""
+    Description: EUM Social origination phone number id (phone-number-id-...). Empty = reply from the number the message arrived on.
 
 Resources:
   SessionsTable:
@@ -77,6 +81,9 @@ Resources:
                 Action: [ "sms-voice:SendTextMessage", "sms-voice:SendMediaMessage" ]
                 Resource: "*"
               - Effect: Allow
+                Action: [ "social-messaging:SendWhatsAppMessage" ]
+                Resource: "*"
+              - Effect: Allow
                 Action: [ "dynamodb:GetItem", "dynamodb:PutItem" ]
                 Resource: !GetAtt SessionsTable.Arn
 
@@ -97,6 +104,7 @@ Resources:
           ALLOWED_REPORT_RECIPIENTS: !Ref AllowedReportRecipients
           ORIGINATION_IDENTITY: !Ref OriginationIdentity
           PSI_API_KEY: !Ref PsiApiKey
+          WHATSAPP_PHONE_NUMBER_ID: !Ref WhatsAppPhoneNumberId
       Code:
         ZipFile: |
           def lambda_handler(event, context):
@@ -125,6 +133,41 @@ Resources:
       Principal: "*"
       InvokedViaFunctionUrl: true
 
+  # Point the WABA's event destination (EUM Social console) at this topic.
+  WhatsAppEventsTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub "${AWS::StackName}-whatsapp-events"
+
+  WhatsAppEventsTopicPolicy:
+    Type: AWS::SNS::TopicPolicy
+    Properties:
+      Topics: [ !Ref WhatsAppEventsTopic ]
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal: { Service: social-messaging.amazonaws.com }
+            Action: sns:Publish
+            Resource: !Ref WhatsAppEventsTopic
+            Condition:
+              StringEquals: { "aws:SourceAccount": !Ref "AWS::AccountId" }
+
+  WhatsAppSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      TopicArn: !Ref WhatsAppEventsTopic
+      Protocol: lambda
+      Endpoint: !GetAtt Function.Arn
+
+  WhatsAppPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref Function
+      Action: lambda:InvokeFunction
+      Principal: sns.amazonaws.com
+      SourceArn: !Ref WhatsAppEventsTopic
+
   InboundSubscription:
     Type: AWS::SNS::Subscription
     Properties:
@@ -147,5 +190,8 @@ Outputs:
   InboundTopicArn:
     Description: Point the EUM two-way SMS/RCS configuration at this SNS topic.
     Value: !Ref InboundTopic
+  WhatsAppEventsTopicArn:
+    Description: Point the WABA event destination (EUM Social) at this SNS topic.
+    Value: !Ref WhatsAppEventsTopic
   FunctionName:
     Value: !Ref Function

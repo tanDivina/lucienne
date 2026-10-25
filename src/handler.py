@@ -1,7 +1,8 @@
 """Lambda entry point for Lucienne.
 
-Routes three event shapes to the same agent core:
+Routes four event shapes to the same agent core:
 - SNS notifications from AWS End User Messaging two-way SMS/RCS -> reply over SMS/RCS
+- SNS notifications from AWS End User Messaging Social (WhatsApp) -> reply on WhatsApp
 - Function URL GET /            -> the web chat demo page
 - Function URL POST /chat       -> JSON chat API used by the demo page
 """
@@ -27,8 +28,66 @@ _ASSET_TYPES = {".png": "image/png", ".jpg": "image/jpeg", ".svg": "image/svg+xm
 
 
 def _handle_inbound_message(record: dict) -> None:
-    """One inbound SMS/RCS message from End User Messaging via SNS."""
+    """One inbound message from End User Messaging via SNS: WhatsApp or SMS/RCS."""
     msg = json.loads(record["Sns"]["Message"])
+    if "whatsAppWebhookEntry" in msg:
+        _handle_whatsapp(msg)
+    else:
+        _handle_sms(msg)
+
+
+_social = None
+
+
+def _social_client():
+    global _social
+    if _social is None:
+        _social = boto3.client("socialmessaging")
+    return _social
+
+
+def _handle_whatsapp(msg: dict) -> None:
+    """One EUM Social webhook event (Meta entry, JSON-string wrapped)."""
+    entry = msg.get("whatsAppWebhookEntry") or "{}"
+    if isinstance(entry, str):
+        entry = json.loads(entry)
+    # Reply from the number the message arrived on; env var overrides.
+    origination = os.environ.get("WHATSAPP_PHONE_NUMBER_ID", "")
+    if not origination:
+        ids = (msg.get("context") or {}).get("MetaPhoneNumberIds") or []
+        if ids:
+            origination = (ids[0].get("arn") or "").rsplit("/", 1)[-1]
+
+    for change in entry.get("changes", []):
+        value = change.get("value") or {}
+        for inbound in value.get("messages", []):  # absent on delivery-status events
+            sender = inbound.get("from", "")
+            if not sender or not origination:
+                print("whatsapp event missing sender or origination:", json.dumps(msg)[:500])
+                continue
+            text = ((inbound.get("text") or {}).get("body") or "").strip()
+            if text:
+                reply = run_turn(session_id=f"wa:{sender}", channel="whatsapp", user_text=text)
+            else:  # image/audio/sticker/...
+                reply = ("Bonjour! For now I only read text here - "
+                         "send me a website address and I will inspect it.")
+            # WhatsApp caps a text message at 4096 chars.
+            for chunk in [reply[i:i + 3800] for i in range(0, len(reply), 3800)] or ["..."]:
+                _social_client().send_whatsapp_message(
+                    originationPhoneNumberId=origination,
+                    metaApiVersion="v20.0",
+                    message=json.dumps({
+                        "messaging_product": "whatsapp",
+                        "recipient_type": "individual",
+                        "to": sender,
+                        "type": "text",
+                        "text": {"preview_url": False, "body": chunk},
+                    }).encode(),
+                )
+
+
+def _handle_sms(msg: dict) -> None:
+    """One inbound SMS/RCS message from End User Messaging via SNS."""
     sender = msg.get("originationNumber")
     text = (msg.get("messageBody") or "").strip()
     if not sender or not text:
