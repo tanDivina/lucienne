@@ -54,7 +54,11 @@
     0%, 100% { transform: rotate(-.7deg) translateY(0); }
     50% { transform: rotate(.7deg) translateY(-2px); }
   }
-  @media (prefers-reduced-motion: reduce) { .stage img { animation: none; } }
+  .stage.thinking img {
+    animation: sway 7s ease-in-out infinite, glow 1.8s ease-in-out infinite;
+  }
+  @keyframes glow { 50% { box-shadow: 0 0 34px rgba(217, 183, 92, .55); } }
+  @media (prefers-reduced-motion: reduce) { .stage img { animation: none !important; } }
   .voicebtn {
     margin-top: 10px; background: none; border: 1px solid var(--line);
     border-radius: 999px; padding: 5px 14px 5px 10px; cursor: pointer;
@@ -166,33 +170,42 @@ const inp = document.getElementById('inp');
 const send = document.getElementById('send');
 const sid = (crypto.randomUUID ? crypto.randomUUID() : String(Math.random()).slice(2));
 
-// --- Lucienne lives: blink, sway, speak ---
+// --- Lucienne lives: blink, sway, inspect, delight, speak ---
 const lulu = document.getElementById('lulu');
-const POSES = { n: 'assets/pose-neutral.png', t: 'assets/pose-talk.png', b: 'assets/pose-blink.png' };
-for (const s of Object.values(POSES)) { const i = new Image(); i.src = s; }
+const stage = document.querySelector('.stage');
+const POSES = {
+  n: 'assets/pose-neutral.png', t: 'assets/pose-talk.png', b: 'assets/pose-blink.png',
+  i: 'assets/pose-inspect.png', d: 'assets/pose-delight.png'
+};
+for (const s of Object.values(POSES)) { const im = new Image(); im.src = s; }
 
+let mood = 'idle'; // idle | thinking | talking
 let flap = null;
-function startTalking() {
-  stopTalking();
-  flap = setInterval(() => {
-    lulu.src = lulu.src.includes('talk') ? POSES.n : POSES.t;
-  }, 150);
+function setMood(m) {
+  mood = m;
+  stage.classList.toggle('thinking', m === 'thinking');
+  if (m !== 'talking' && flap) { clearInterval(flap); flap = null; }
+  if (m === 'idle') lulu.src = POSES.n;
+  else if (m === 'thinking') lulu.src = POSES.i;
+  else if (m === 'talking' && !flap) {
+    flap = setInterval(() => { lulu.src = lulu.src.includes('talk') ? POSES.n : POSES.t; }, 150);
+  }
 }
-function stopTalking() {
-  if (flap) clearInterval(flap);
-  flap = null;
-  lulu.src = POSES.n;
+function delight() { // quick proud flash when results land
+  if (mood !== 'idle') return;
+  lulu.src = POSES.d;
+  setTimeout(() => { if (mood === 'idle' && lulu.src.includes('delight')) lulu.src = POSES.n; }, 1600);
 }
 (function blink() {
-  if (!flap) {
+  if (mood === 'idle' && !lulu.src.includes('delight')) {
     lulu.src = POSES.b;
-    setTimeout(() => { if (!flap) lulu.src = POSES.n; }, 140);
+    setTimeout(() => { if (mood === 'idle' && lulu.src.includes('blink')) lulu.src = POSES.n; }, 140);
   }
   setTimeout(blink, 2800 + Math.random() * 3500);
 })();
 
-let voiceOn = true;
-try { voiceOn = localStorage.getItem('lucienne-voice') !== 'off'; } catch (e) {}
+let voiceOn = false; // opt-in: her voice is a garnish, not a monologue
+try { voiceOn = localStorage.getItem('lucienne-voice') === 'on'; } catch (e) {}
 const voiceBtn = document.getElementById('voice');
 function renderVoiceBtn() {
   voiceBtn.classList.toggle('on', voiceOn);
@@ -213,10 +226,10 @@ function speakReply(b64) {
   try {
     if (player) player.pause();
     player = new Audio('data:audio/mpeg;base64,' + b64);
-    player.onplay = startTalking;
-    player.onended = player.onpause = stopTalking;
-    player.play().catch(stopTalking);
-  } catch (e) { stopTalking(); }
+    player.onplay = () => setMood('talking');
+    player.onended = player.onpause = () => setMood('idle');
+    player.play().catch(() => setMood('idle'));
+  } catch (e) { setMood('idle'); }
 }
 
 const mic = document.getElementById('mic');
@@ -268,6 +281,7 @@ async function ask(text) {
   add('You', text);
   document.querySelectorAll('.chips').forEach(e => e.remove());
   const wait = add('Lucienne', '', ' thinking');
+  setMood('thinking');
   send.disabled = true;
   try {
     const r = await fetch('chat', {
@@ -278,9 +292,12 @@ async function ask(text) {
     const data = await r.json();
     wait.classList.remove('thinking');
     wait.querySelector('.t').textContent = data.reply || data.error || 'Something went quiet on my end — try once more?';
+    setMood('idle');
     if (data.audio && voiceOn) speakReply(data.audio);
+    else delight();
   } catch (e) {
     wait.classList.remove('thinking');
+    setMood('idle');
     wait.querySelector('.t').textContent = 'I could not reach my inspection desk (' + e.message + '). Try again in a moment.';
   }
   send.disabled = false;

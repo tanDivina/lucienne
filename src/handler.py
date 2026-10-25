@@ -48,10 +48,78 @@ def _handle_inbound_message(record: dict) -> None:
         )
 
 
+_ONES = ("zero one two three four five six seven eight nine ten eleven twelve "
+         "thirteen fourteen fifteen sixteen seventeen eighteen nineteen").split()
+_TENS = "zero ten twenty thirty forty fifty sixty seventy eighty ninety".split()
+
+
+def _int_words(n: int) -> str:
+    if n < 20:
+        return _ONES[n]
+    if n < 100:
+        return _TENS[n // 10] + (("-" + _ONES[n % 10]) if n % 10 else "")
+    if n < 1000:
+        return _ONES[n // 100] + " hundred" + ((" " + _int_words(n % 100)) if n % 100 else "")
+    for div, word in ((10**9, "billion"), (10**6, "million"), (1000, "thousand")):
+        if n >= div:
+            rest = (" " + _int_words(n % div)) if n % div else ""
+            return _int_words(n // div) + " " + word + rest
+    return str(n)
+
+
+def _num_words(m: re.Match) -> str:
+    tok = m.group(0).replace(",", "")
+    if "." in tok:
+        whole, frac = tok.split(".")
+        return _int_words(int(whole)) + " point " + " ".join(_ONES[int(d)] for d in frac)
+    n = int(tok)
+    return _int_words(n) if n < 10**12 else tok
+
+
+_SPOKEN = [  # the French voice reads digits and acronyms in French; hand her English words
+    (r"https?://([^/\s]+)\S*", r"\1"),
+    (r"[*_#`]", ""),
+    (r"\bLCP\b", "Largest Contentful Paint"),
+    (r"\bCLS\b", "Cumulative Layout Shift"),
+    (r"\bINP\b", "Interaction to Next Paint"),
+    (r"\bTTFB\b", "time to first byte"),
+    (r"\bSEO\b", "search engine optimization"),
+    (r"\bURLs\b", "links"),
+    (r"\bURL\b", "link"),
+    (r"\bh1\b", "main heading"),
+    (r"(\d)\s*ms\b", r"\1 milliseconds"),
+    (r"(\d)\s*s\b", r"\1 seconds"),
+    (r"(\d)\s*(KB|kb)\b", r"\1 kilobytes"),
+    (r"(\d)\s*(MB|mb)\b", r"\1 megabytes"),
+    (r"%", " percent"),
+    (r"&", " and "),
+]
+
+
 def _speechify(text: str) -> str:
-    """Make a chat reply pleasant to hear: domains instead of URLs, no markdown."""
-    text = re.sub(r"https?://([^/\s]+)\S*", r"\1", text)
-    return re.sub(r"[*_#`]", "", text)
+    """Make a chat reply pleasant to hear from a French voice reading English."""
+    for pat, rep in _SPOKEN:
+        text = re.sub(pat, rep, text)
+    text = re.sub(r"\d{1,3}(?:,\d{3})+|\d+\.\d+|\d+", _num_words, text)
+    return text
+
+
+def _speech_excerpt(text: str) -> str:
+    """Speak a short headline, not the whole report; the chat holds the details."""
+    text = text.strip()
+    if len(text) <= 360:
+        return text
+    out = ""
+    for para in text.split("\n"):
+        p = para.strip()
+        if not p or p.startswith(("-", "•", "*")):
+            continue
+        if out and len(out) + len(p) > 340:
+            break
+        out = (out + " " + p).strip()
+        if len(out) >= 340:
+            break
+    return (out or text[:340]) + " ... The full details are in your chat."
 
 
 def _synthesize(text: str) -> str | None:
@@ -61,7 +129,7 @@ def _synthesize(text: str) -> str | None:
             Engine="neural",
             VoiceId=os.environ.get("LUCIENNE_VOICE", "Lea"),
             OutputFormat="mp3",
-            Text=_speechify(text)[:2900],
+            Text=_speechify(_speech_excerpt(text))[:2900],
         )
         return base64.b64encode(resp["AudioStream"].read()).decode()
     except Exception as exc:  # voice is a garnish; never fail the reply over it

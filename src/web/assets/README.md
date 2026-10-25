@@ -8,10 +8,11 @@ Never redraw, regenerate, or substitute stock/emoji art. Every other file
 here is derived from `lucienne.png`:
 
 - `avatar.png` — 320px head + lantern crop (chat avatars)
-- `pose-neutral.png` / `pose-talk.png` / `pose-blink.png` — aligned 448px
-  animation frames (nano-banana edits of the official art, same character);
-  the header stage flaps talk/neutral while her Polly audio plays and
-  blinks when idle
+- `pose-neutral.png` / `pose-talk.png` / `pose-blink.png` /
+  `pose-inspect.png` / `pose-delight.png` — aligned 448px animation frames
+  (nano-banana edits of the official art, same character). Idle: blink +
+  sway. Thinking: inspect pose + lantern glow. Results: delight flash.
+  Speaking: talk/neutral mouth flaps while her Polly audio plays.
 - `favicon.png` / `apple-touch-icon.png` — 64 / 180 px of the same crop
 - `og.jpg` — 1200×630 link-share card
 
