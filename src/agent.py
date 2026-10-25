@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import time
 
 import boto3
@@ -231,6 +232,30 @@ def _save_history(session_id: str, messages: list) -> None:
     })
 
 
+# The prompt forbids markdown but the model still slips some in; scrub it
+# deterministically so no channel ever shows asterisks or hashes.
+_MD_RULES = [
+    (re.compile(r"^#{1,6}\s+", re.M), ""),                     # headings
+    (re.compile(r"\*\*\*(.+?)\*\*\*", re.S), r"\1"),           # bold italic
+    (re.compile(r"\*\*(.+?)\*\*", re.S), r"\1"),               # bold
+    (re.compile(r"(?<![\w*])\*([^*\n]+?)\*(?![\w*])"), r"\1"), # italic
+    (re.compile(r"__(.+?)__", re.S), r"\1"),
+    (re.compile(r"(?<![\w_])_([^_\n]+?)_(?![\w_])"), r"\1"),
+    (re.compile(r"```[a-z]*\n?"), ""),                         # code fences
+    (re.compile(r"`([^`\n]*)`"), r"\1"),                       # inline code
+    (re.compile(r"\[([^\]]+)\]\(([^)\s]+)\)"), r"\1 (\2)"),    # links
+    (re.compile(r"^(\s*)[*•]\s+", re.M), r"\1- "),             # bullets -> dashes
+    (re.compile(r"^\s*>\s?", re.M), ""),                       # blockquotes
+    (re.compile(r"^\s*(?:-{3,}|={3,}|\*{3,}|_{3,})\s*$", re.M), ""), # rules
+]
+
+
+def _strip_markdown(text: str) -> str:
+    for pat, rep in _MD_RULES:
+        text = pat.sub(rep, text)
+    return text.strip()
+
+
 def run_turn(session_id: str, channel: str, user_text: str) -> str:
     """One conversational turn. Returns Lucienne's reply text."""
     messages = _load_history(session_id)
@@ -275,4 +300,4 @@ def run_turn(session_id: str, channel: str, user_text: str) -> str:
         messages.append({"role": "assistant", "content": [{"text": reply}]})
 
     _save_history(session_id, messages)
-    return reply or "(no reply)"
+    return _strip_markdown(reply) or "(no reply)"
