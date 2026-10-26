@@ -14,6 +14,7 @@ import json
 import os
 import pathlib
 import re
+import uuid
 
 import boto3
 
@@ -37,6 +38,7 @@ def _handle_inbound_message(record: dict) -> None:
 
 
 _social = None
+_s3 = None
 
 
 def _social_client():
@@ -44,6 +46,13 @@ def _social_client():
     if _social is None:
         _social = boto3.client("socialmessaging")
     return _social
+
+
+def _s3_client():
+    global _s3
+    if _s3 is None:
+        _s3 = boto3.client("s3")
+    return _s3
 
 
 def _handle_whatsapp(msg: dict) -> None:
@@ -84,6 +93,43 @@ def _handle_whatsapp(msg: dict) -> None:
                         "text": {"preview_url": False, "body": chunk},
                     }).encode(),
                 )
+            if text:
+                _send_whatsapp_voice(origination, sender, reply)
+
+
+def _send_whatsapp_voice(origination: str, recipient: str, reply: str) -> None:
+    """Lucienne's spoken headline as a WhatsApp audio message.
+
+    Meta only takes media from S3, so: Polly mp3 -> media bucket (1-day
+    lifecycle) -> PostWhatsAppMessageMedia -> audio message by media id.
+    """
+    bucket = os.environ.get("WA_MEDIA_BUCKET", "")
+    if not bucket:
+        return
+    try:
+        audio = _synthesize_bytes(reply)
+        if not audio:
+            return
+        key = f"polly/{uuid.uuid4().hex}.mp3"
+        _s3_client().put_object(Bucket=bucket, Key=key, Body=audio,
+                                ContentType="audio/mpeg")
+        media = _social_client().post_whatsapp_message_media(
+            originationPhoneNumberId=origination,
+            sourceS3File={"bucketName": bucket, "key": key},
+        )
+        _social_client().send_whatsapp_message(
+            originationPhoneNumberId=origination,
+            metaApiVersion="v20.0",
+            message=json.dumps({
+                "messaging_product": "whatsapp",
+                "recipient_type": "individual",
+                "to": recipient,
+                "type": "audio",
+                "audio": {"id": media["mediaId"]},
+            }).encode(),
+        )
+    except Exception as exc:  # voice is a garnish; never fail the text reply over it
+        print("whatsapp voice error:", exc)
 
 
 def _handle_sms(msg: dict) -> None:
@@ -194,7 +240,7 @@ def _speech_excerpt(text: str) -> str:
     return out + " ... The full details are in your chat."
 
 
-def _synthesize(text: str) -> str | None:
+def _synthesize_bytes(text: str) -> bytes | None:
     """Lucienne's voice: Polly's Léa (fr-FR neural) reading English = French accent."""
     try:
         resp = _polly.synthesize_speech(
@@ -203,10 +249,15 @@ def _synthesize(text: str) -> str | None:
             OutputFormat="mp3",
             Text=_speechify(_speech_excerpt(text))[:2900],
         )
-        return base64.b64encode(resp["AudioStream"].read()).decode()
+        return resp["AudioStream"].read()
     except Exception as exc:  # voice is a garnish; never fail the reply over it
         print("polly error:", exc)
         return None
+
+
+def _synthesize(text: str) -> str | None:
+    audio = _synthesize_bytes(text)
+    return base64.b64encode(audio).decode() if audio else None
 
 
 def _http_response(status: int, body: str, content_type: str = "application/json") -> dict:

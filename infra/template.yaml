@@ -52,6 +52,22 @@ Resources:
     Properties:
       TopicName: !Sub "${AWS::StackName}-inbound"
 
+  # Staging for WhatsApp voice notes: Meta only ingests media from S3.
+  WhatsAppMediaBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "${AWS::StackName}-wa-media-${AWS::AccountId}"
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      LifecycleConfiguration:
+        Rules:
+          - Id: expire-voice-notes
+            Status: Enabled
+            ExpirationInDays: 1
+
   FunctionRole:
     Type: AWS::IAM::Role
     Properties:
@@ -81,8 +97,11 @@ Resources:
                 Action: [ "sms-voice:SendTextMessage", "sms-voice:SendMediaMessage" ]
                 Resource: "*"
               - Effect: Allow
-                Action: [ "social-messaging:SendWhatsAppMessage" ]
+                Action: [ "social-messaging:SendWhatsAppMessage", "social-messaging:PostWhatsAppMessageMedia" ]
                 Resource: "*"
+              - Effect: Allow
+                Action: [ "s3:PutObject", "s3:GetObject" ]
+                Resource: !Sub "${WhatsAppMediaBucket.Arn}/*"
               - Effect: Allow
                 Action: [ "dynamodb:GetItem", "dynamodb:PutItem" ]
                 Resource: !GetAtt SessionsTable.Arn
@@ -105,6 +124,7 @@ Resources:
           ORIGINATION_IDENTITY: !Ref OriginationIdentity
           PSI_API_KEY: !Ref PsiApiKey
           WHATSAPP_PHONE_NUMBER_ID: !Ref WhatsAppPhoneNumberId
+          WA_MEDIA_BUCKET: !Ref WhatsAppMediaBucket
       Code:
         ZipFile: |
           def lambda_handler(event, context):
