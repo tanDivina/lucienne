@@ -1,0 +1,97 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+  html,body{margin:0;background:#f8f2e2}
+  svg{display:block}
+  text{font-family:Georgia,"Times New Roman",serif;fill:#2b2620;font-size:22px}
+  .t{font-size:44px}
+  .s{font-size:17px;fill:#6b6152}
+  .tag{font-size:14px;font-weight:bold;letter-spacing:.06em}
+  .box{fill:#fffaf0;stroke:#b9a782;stroke-width:2}
+  .hot{fill:#fff3d6;stroke:#c8892b;stroke-width:3}
+  .cds{fill:#fdf1e4;stroke:#c8892b;stroke-width:2;stroke-dasharray:0}
+  .ln{fill:none;stroke:#8c7b5c;stroke-width:2.5;marker-end:url(#a)}
+  .dash{stroke-dasharray:7 6}
+</style></head><body>
+<svg width="1500" height="1000" viewBox="0 0 1500 1000">
+  <defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#8c7b5c"/></marker></defs>
+
+  <text x="70" y="95" class="t">Lucienne · architecture</text>
+  <text x="72" y="132" class="s">One Lambda agent, every channel. Orange borders = AWS Communication Developer Services used at runtime.</text>
+
+  <!-- channels -->
+  <text x="70" y="200" class="tag" fill="#8c7b5c">CHANNELS</text>
+  <rect x="70" y="220" width="300" height="100" rx="14" class="cds"/>
+  <text x="90" y="260">WhatsApp</text>
+  <text x="90" y="290" class="s">AWS End User Messaging Social</text>
+  <text x="290" y="260" class="tag" fill="#2f7d4f">LIVE</text>
+
+  <rect x="70" y="350" width="300" height="100" rx="14" class="box"/>
+  <text x="90" y="390">Web chat</text>
+  <text x="90" y="420" class="s">Lambda Function URL, voice + mic</text>
+  <text x="290" y="390" class="tag" fill="#2f7d4f">LIVE</text>
+
+  <rect x="70" y="480" width="300" height="100" rx="14" class="cds"/>
+  <text x="90" y="520">SMS / RCS</text>
+  <text x="90" y="550" class="s">AWS End User Messaging</text>
+  <text x="250" y="520" class="tag" fill="#a0642a">WIRED</text>
+
+  <!-- SNS -->
+  <rect x="440" y="260" width="170" height="80" rx="14" class="box"/>
+  <text x="525" y="296" text-anchor="middle">Amazon SNS</text>
+  <text x="525" y="322" text-anchor="middle" class="s">webhook events</text>
+
+  <path class="ln" d="M370 270 H436"/>
+  <path class="ln dash" d="M370 530 H405 Q420 530 420 515 V330 H436"/>
+  <path class="ln" d="M370 400 H660"/>
+  <path class="ln" d="M610 300 H630 Q645 300 645 315 V360 H660" />
+
+  <!-- agent -->
+  <rect x="665" y="250" width="380" height="250" rx="18" class="hot"/>
+  <text x="855" y="300" text-anchor="middle" style="font-size:28px">Lucienne agent</text>
+  <text x="855" y="330" text-anchor="middle" class="s">AWS Lambda (Python, stdlib only)</text>
+  <rect x="695" y="355" width="320" height="120" rx="12" class="box"/>
+  <text x="855" y="392" text-anchor="middle">Amazon Bedrock</text>
+  <text x="855" y="420" text-anchor="middle" class="s">Converse API tool-use loop</text>
+  <text x="855" y="446" text-anchor="middle" class="s">Claude Sonnet 4.5</text>
+
+  <!-- tools -->
+  <text x="1110" y="200" class="tag" fill="#8c7b5c">TOOLS THE AGENT CHOOSES</text>
+  <rect x="1110" y="220" width="320" height="62" rx="12" class="box"/>
+  <text x="1130" y="258" style="font-size:19px">inspect_page</text>
+  <rect x="1110" y="298" width="320" height="62" rx="12" class="box"/>
+  <text x="1130" y="336" style="font-size:19px">check_robots_sitemap</text>
+  <rect x="1110" y="376" width="320" height="62" rx="12" class="box"/>
+  <text x="1130" y="414" style="font-size:19px">core_web_vitals (PageSpeed)</text>
+  <rect x="1110" y="454" width="320" height="62" rx="12" class="cds"/>
+  <text x="1130" y="492" style="font-size:19px">email_report → Amazon SES</text>
+  <path class="ln" d="M1045 300 H1105"/>
+  <path class="ln" d="M1045 340 H1080 V329 H1105"/>
+  <path class="ln" d="M1045 400 H1105"/>
+  <path class="ln" d="M1045 460 H1080 V485 H1105"/>
+
+  <!-- below agent -->
+  <path class="ln" d="M760 500 V600"/>
+  <path class="ln" d="M950 500 V600"/>
+  <rect x="640" y="605" width="250" height="100" rx="14" class="box"/>
+  <text x="765" y="645" text-anchor="middle">Amazon DynamoDB</text>
+  <text x="765" y="675" text-anchor="middle" class="s">conversation memory, TTL</text>
+  <rect x="910" y="605" width="270" height="100" rx="14" class="box"/>
+  <text x="1045" y="645" text-anchor="middle">Amazon Polly</text>
+  <text x="1045" y="675" text-anchor="middle" class="s">Amy (EN) + Léa (FR) stitched</text>
+
+  <rect x="1200" y="605" width="230" height="100" rx="14" class="box"/>
+  <text x="1315" y="645" text-anchor="middle">Amazon S3</text>
+  <text x="1315" y="675" text-anchor="middle" class="s">voice note, 1-day expiry</text>
+  <path class="ln" d="M1180 655 H1196"/>
+
+  <!-- reply path -->
+  <rect x="70" y="760" width="1360" height="160" rx="18" class="cds"/>
+  <text x="100" y="805" class="tag" fill="#a0642a">REPLY PATH ON WHATSAPP</text>
+  <text x="100" y="845">1. Text reply: SendWhatsAppMessage (French phrases in italics)</text>
+  <text x="100" y="880">2. Voice note: PostWhatsAppMessageMedia from S3, then an audio message</text>
+  <text x="900" y="845">3. On request: HTML developer briefing via SES</text>
+  <text x="900" y="880" class="s">About 3 cents per reply at list prices</text>
+  <path class="ln" d="M1315 705 V755"/>
+</svg>
+</body></html>
