@@ -247,8 +247,10 @@ def _speech_excerpt(text: str) -> str:
 
 
 _FRENCH_WORDS = re.compile(
-    r"_([^_\n]{1,80})_|\b(Mais bien s[ûu]r|Mais oui|Eh bien|Oh l[àa] l[àa]|Bien s[ûu]r|Mon Dieu|Bonjour|Bonsoir|Alors|Voil[àa]|Bon|Merci|"
-    r"Magnifique|Parfait|Exactement|Tr[èe]s bien|D'accord|Enchant[ée]e?)\b"
+    # Trailing punctuation rides with the French voice; spoken alone, the English voice says "exclamation mark".
+    r"(?:_([^_\n]{1,80})_|\b(Mais bien s[ûu]r|Mais oui|Eh bien|Oh l[àa] l[àa]|Bien s[ûu]r|Mon Dieu|Bonjour|Bonsoir|Alors|Voil[àa]|Bon|Merci(?: beaucoup)?|"
+    r"Magnifique|Parfait|Exactement|Tr[èe]s bien|D'accord|Enchant[ée]e?|Un petit peu|Un peu|C'est la vie|C'est parfait|Au revoir|[ÀA] bient[ôo]t|"
+    r"Oui|Bien|Quelle question|Ah bon|Allez|Pardon|Zut|Chapeau|Formidable|Bravo)\b)[!?.…]*"
 )
 
 
@@ -280,12 +282,12 @@ def _synthesize_bytes(text: str) -> bytes | None:
         audio, pos = b"", 0
         for m in _FRENCH_WORDS.finditer(speech):
             before = speech[pos:m.start()].replace("_", "").strip(" ,-")
-            if before:
+            if re.search(r"\w", before):
                 audio += _speak(before, english)
-            audio += _speak(m.group(1) or m.group(0), french)
+            audio += _speak(m.group(0).replace("_", ""), french)
             pos = m.end()
         rest = speech[pos:].replace("_", "").strip(" ,-")
-        if rest:
+        if re.search(r"\w", rest):
             audio += _speak(rest, english)
         return audio or None
     except Exception as exc:  # voice is a garnish; never fail the reply over it
