@@ -55,10 +55,24 @@ Paste into "What it does" or "What makes it different":
 Wording rules (Oct 27 2026):
 - Do NOT write "Meta's agent can't talk" or "only bot with a voice": not verified in
   Meta's docs. "Unlike a text-only chatbot" is the safe form.
-- Do NOT claim "a fifth of the cost". Per reply we estimate WhatsApp ~1 cent (2 with a
-  voice note) + Bedrock 1 to 3 cents; Meta Business Agent is billed per token (Meta
-  estimates ~4 to 5 cents per message). Only quote a number after measuring real cost
-  per reply from the AWS bill.
+- Do NOT claim "a fifth of the cost". Meta Business Agent is billed per token (Meta
+  estimates ~4 to 5 cents per message); ours is roughly half to two thirds of that.
+
+### Measured cost per reply (Oct 27 2026)
+Local harness on the live agent code + Bedrock, token usage from the Converse API:
+| Turn | Bedrock calls | Tokens in/out | AI cost |
+|---|---|---|---|
+| Small talk ("who are you?") | 1 | 2,192 / 112 | $0.008 |
+| Site audit (inspect_page) | 2 | 5,045 / 257 | $0.019 |
+| Follow-up question | 1 | 2,933 / 148 | $0.011 |
+Matches 3 days of CloudWatch: ~3.1k input tokens per Bedrock call. At list prices per
+reply: AI ~1 to 2 cents + AWS EUM ~0.5 cent per message each way + voice note (one more
+message + Polly ~0.5 cent) = **about 2.5 to 4 cents per reply with a voice note**.
+AWS bill so far: Meta labeled our 9 replies "Service_Free_Customer_Service" ($0), Polly
+inside its free tier.
+Safe Devpost line: "Measured on the live agent: about 1 to 2 cents of AI per reply, and
+about 3 cents all-in at list prices including WhatsApp delivery and a voice note."
+Cheaper lever: Claude Haiku 4.5 for small-talk turns.
 - Context: since Oct 1 2026 Meta charges per message for service replies inside the
   24h window too, so "WhatsApp replies are free" is no longer true.
 
