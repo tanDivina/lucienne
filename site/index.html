@@ -3,259 +3,445 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Lucienne — Website &amp; SEO Copilot</title>
-<meta name="description" content="Lucienne is a conversational website & SEO copilot. Drop her a link and she inspects speed, search visibility and structure — then explains it in plain words.">
+<title>Lucienne · Website &amp; SEO Copilot</title>
+<meta name="description" content="Lucienne is a conversational website and SEO copilot. Drop her a link and she inspects speed, search visibility and structure, then explains it in plain words.">
 <link rel="icon" type="image/png" href="assets/favicon.png">
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
-<meta property="og:title" content="Lucienne — Website & SEO Copilot">
+<meta property="og:title" content="Lucienne · Website & SEO Copilot">
 <meta property="og:description" content="Drop me a link. I'll bring some clarity.">
 <meta property="og:image" content="https://lucienne.hero-apps.com/assets/og.jpg">
 <meta property="og:url" content="https://lucienne.hero-apps.com/">
 <meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500;1,600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap" rel="stylesheet">
+<script>document.documentElement.classList.add('js')</script>
 <style>
+  html, body { background: #f3efe1; }
   :root {
-    --bg: #faf8f4;
-    --ink: #1f1b16;
-    --muted: #7a7267;
-    --accent: #8a6d1f;
-    --accent-soft: #f0e7d2;
-    --candy: #58c1ec;       /* candy blue: fills */
-    --candy-deep: #0d7fb7;  /* candy blue: text, strokes */
-    --candy-soft: #e2f4fc;  /* candy blue: washes */
-    --card: #ffffff;
-    --line: #e7e0d4;
+    --paper: #f3efe1;
+    --card: #faf7ec;
+    --ink: #221c13;
+    --muted: #7b7161;
+    --line: rgba(34, 28, 19, .15);
+    --amber: #8a6d1f;
+    --amber-soft: #ece4cb;
+    --halo: rgba(224, 170, 70, .22);
+    --lamp: rgba(200, 144, 64, .08);
+    --ease-out-expo: cubic-bezier(.16, 1, .3, 1);
+    --ease-out-quint: cubic-bezier(.22, 1, .36, 1);
+    --ease-reveal: cubic-bezier(.25, .1, .25, 1);
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
-      --bg: #17140f;
-      --ink: #ece7de;
-      --muted: #9b937f;
-      --accent: #d9b75c;
-      --accent-soft: #2a2416;
-      --candy: #5fc6f2;
-      --candy-deep: #7cd4ff;
-      --candy-soft: #0e2a3b;
-      --card: #201c15;
-      --line: #322c21;
+      --paper: #16120c;
+      --card: #201a12;
+      --ink: #ece5d6;
+      --muted: #9c9280;
+      --line: rgba(236, 229, 214, .14);
+      --amber: #d9b75c;
+      --amber-soft: #2a2414;
+      --halo: rgba(216, 160, 60, .15);
+      --lamp: rgba(216, 166, 74, .10);
     }
+    html:not([data-theme="light"]), html:not([data-theme="light"]) body { background: #16120c; }
   }
   * { box-sizing: border-box; }
+  html { overflow-x: clip; scroll-behavior: smooth; }
   body {
-    margin: 0; color: var(--ink);
-    background: radial-gradient(700px 420px at 72% -60px, var(--candy-soft) 0%, transparent 70%) no-repeat,
-                var(--bg);
-    font: 17px/1.6 "Source Serif 4", Georgia, serif;
+    margin: 0; color: var(--ink); background: var(--paper); overflow-x: clip;
+    font: 400 17px/1.6 "Source Serif 4", Georgia, serif;
+    -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
   }
-  ::selection { background: var(--candy-soft); }
-  .wrap { max-width: 980px; margin: 0 auto; padding: 0 16px; }
-  h1, h2 { font-family: "Cormorant Garamond", Georgia, serif; font-weight: 600; letter-spacing: .03em; }
-  a { color: var(--candy-deep); }
+  ::selection { background: var(--amber-soft); }
+  :focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+  a { color: inherit; }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 24px; }
+
+  /* atmosphere */
+  .lamplight {
+    position: fixed; inset: 0; z-index: 99; pointer-events: none;
+    background: radial-gradient(480px circle at var(--lx, -999px) var(--ly, -999px), var(--lamp), transparent 70%);
+  }
+  .page-grain {
+    position: fixed; inset: 0; z-index: 100; pointer-events: none; opacity: .35;
+    background-size: 200px 200px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.08'/%3E%3C/svg%3E");
+  }
+
+  /* entrance choreography (fail-safe) */
+  .appear { animation-duration: 1.05s; animation-fill-mode: both; animation-timing-function: var(--ease-out-expo); animation-delay: var(--d, .08s); }
+  .js .appear { animation-play-state: paused; }
+  .fonts-ready .appear { animation-play-state: running; }
+  .appear--down { animation-name: in-down; }
+  .appear--soft { animation-name: in-soft; }
+  .appear--fade { animation-name: in-fade; }
+  .appear--btn  { animation-name: in-btn; }
+  .appear.is-in { animation: none; opacity: 1; transform: none; }
+  @keyframes in-down { from { opacity: 0; transform: translateY(-14px); } }
+  @keyframes in-soft { from { opacity: 0; transform: translateY(16px); } }
+  @keyframes in-fade { from { opacity: 0; } }
+  @keyframes in-btn  { from { opacity: 0; transform: translateY(18px) scale(.96); } }
+  .hl-line { display: block; overflow: hidden; padding: .06em .15em .14em; margin: -.06em -.15em -.14em; }
+  .hl-line > span { display: block; animation: ml-up .9s var(--ease-out-quint) both; animation-delay: var(--d, 0s); }
+  .js .hl-line > span { animation-play-state: paused; }
+  .fonts-ready .hl-line > span { animation-play-state: running; }
+  .is-in .hl-line > span, .hl-line > span.is-in { animation: none; transform: none; }
+  @keyframes ml-up { from { transform: translateY(112%); } }
+  @media (prefers-reduced-motion: reduce) {
+    .appear, .hl-line > span { animation: none !important; opacity: 1; transform: none; }
+  }
+
+  /* scroll reveals */
+  .js [data-reveal] {
+    opacity: 0; transform: translate3d(var(--x, 0px), var(--y, 28px), 0);
+    transition: opacity var(--dur, .7s) var(--ease-reveal) var(--d, 0s), transform var(--dur, .7s) var(--ease-reveal) var(--d, 0s);
+  }
+  .js [data-reveal].is-in { opacity: 1; transform: none; }
+  @media (prefers-reduced-motion: reduce) { .js [data-reveal] { opacity: 1; transform: none; transition: none; } }
+
+  /* nav */
+  .nav { display: flex; align-items: center; gap: 36px; padding: 22px 0; }
+  .wordmark {
+    font: italic 600 27px/1 "Cormorant Garamond", Georgia, serif; letter-spacing: .01em;
+    color: var(--ink); text-decoration: none;
+  }
+  .nav-links { display: flex; gap: 28px; margin-left: auto; }
+  .nav-links a {
+    font: 500 13.5px/1 system-ui, sans-serif; letter-spacing: .02em; color: var(--muted);
+    text-decoration: none; position: relative; padding: 4px 0;
+  }
+  .nav-links a::after {
+    content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 1px;
+    background: var(--amber); transform: scaleX(0); transform-origin: left; transition: transform .3s var(--ease-out-quint);
+  }
+  .nav-links a:hover { color: var(--ink); }
+  .nav-links a:hover::after { transform: scaleX(1); }
+  .nav-cta {
+    font: 600 13.5px/1 system-ui, sans-serif; color: var(--paper); background: var(--ink);
+    text-decoration: none; border-radius: 999px; padding: 11px 20px; white-space: nowrap;
+    transition: transform .2s var(--ease-out-quint), opacity .2s;
+  }
+  .nav-cta:hover { transform: translateY(-1px); opacity: .92; }
 
   /* hero */
-  .hero { display: flex; align-items: center; gap: 40px; padding: 64px 0 48px; }
-  .hero-copy { flex: 1.2; }
-  .hero h1 { font-size: 54px; margin: 0 0 6px; }
-  .hero .tag { font-style: italic; color: var(--muted); font-size: 20px; margin: 0 0 18px; }
-  .hero p.lede { margin: 0 0 28px; max-width: 46ch; }
-  .hero-art { flex: 1; max-width: 340px; }
-  .hero-art img {
-    width: 100%; display: block; border-radius: 24px; border: 1px solid var(--line);
-    animation: sway 7s ease-in-out infinite; transform-origin: 50% 100%;
+  .hero { display: flex; flex-direction: column; min-height: calc(100dvh - 86px); }
+  .hero-main { flex: 1; display: flex; align-items: center; gap: 48px; padding: 24px 0 36px; }
+  .hero-copy { flex: 1.15; max-width: 600px; }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 9px; margin: 0 0 22px;
+    font: 600 11.5px/1 system-ui, sans-serif; letter-spacing: .18em; text-transform: uppercase; color: var(--muted);
   }
-  @keyframes sway {
-    0%, 100% { transform: rotate(-.6deg) translateY(0); }
-    50% { transform: rotate(.6deg) translateY(-3px); }
+  .eyebrow::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--amber); box-shadow: 0 0 10px var(--halo); }
+  .hero h1 {
+    margin: 0 0 20px; font: 600 clamp(52px, 6.6vw, 92px)/0.98 "Cormorant Garamond", Georgia, serif;
+    letter-spacing: -.01em;
   }
-  @media (prefers-reduced-motion: reduce) { .hero-art img { animation: none; } }
-  .cta-row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
-  .btn {
-    display: inline-block; padding: 13px 24px; border-radius: 12px; border: none;
-    background: var(--candy); color: #0f2230; text-decoration: none;
-    font: 600 16px system-ui, sans-serif; cursor: pointer;
-    transition: transform .15s ease, filter .15s ease;
+  .hero h1 em { font-style: italic; font-weight: 500; color: var(--amber); font-size: .72em; line-height: 1.15; }
+  @media (min-width: 881px) { .hero h1 .hl-line > span { white-space: nowrap; } }
+  .hero .lede { margin: 0 0 34px; max-width: 52ch; font-size: 17.5px; line-height: 1.65; color: var(--muted); }
+  .hero .lede strong { font-weight: 600; color: var(--ink); }
+  .cta-row { display: flex; gap: 22px; flex-wrap: wrap; align-items: center; }
+  .btn-roll {
+    display: inline-flex; align-items: center; gap: 12px; padding: 9px 9px 9px 24px; border-radius: 999px;
+    background: var(--ink); color: var(--paper); font: 600 14.5px/20px system-ui, sans-serif;
+    text-decoration: none; transition: transform .25s var(--ease-out-quint), box-shadow .25s;
   }
-  .btn:hover { transform: translateY(-1px); filter: brightness(1.05); }
-  .btn.ghost {
-    background: none; border: 1px solid var(--line); color: var(--muted); cursor: default;
-    font-weight: 400;
+  .btn-roll:hover { transform: translateY(-2px); box-shadow: 0 10px 24px rgba(34, 28, 19, .18); }
+  .btn-roll__label { display: block; height: 20px; overflow: hidden; }
+  .btn-roll__inner { display: flex; flex-direction: column; transition: transform .5s var(--ease-reveal); }
+  .btn-roll__inner > span { display: block; height: 20px; white-space: nowrap; }
+  .btn-roll:hover .btn-roll__inner, .btn-roll:focus-visible .btn-roll__inner { transform: translateY(-50%); }
+  .btn-roll__chip { width: 34px; height: 34px; border-radius: 999px; background: var(--paper); color: var(--ink); display: grid; place-items: center; flex: none; }
+  .btn-roll__chip svg { transition: transform .5s var(--ease-reveal); }
+  .btn-roll:hover .btn-roll__chip svg, .btn-roll:focus-visible .btn-roll__chip svg { transform: rotate(-45deg); }
+  .link-soft {
+    font: 500 14.5px/1.3 system-ui, sans-serif; color: var(--muted); text-decoration: none;
+    border-bottom: 1px solid var(--line); padding-bottom: 3px; transition: color .25s, border-color .25s;
+  }
+  .link-soft:hover { color: var(--amber); border-color: var(--amber); }
+
+  .hero-art { flex: 1; max-width: 410px; }
+  .pool { position: relative; }
+  .pool::before {
+    content: ""; position: absolute; inset: -16%; display: none;
+    background: radial-gradient(50% 48% at 50% 46%, var(--halo), transparent 72%);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .pool::before { display: block; }
+  }
+  .pool img {
+    position: relative; width: 100%; height: auto; display: block;
+    -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 10%, #000 74%, rgba(0,0,0,.5) 89%, transparent 99%);
+            mask-image: linear-gradient(180deg, transparent 0%, #000 10%, #000 74%, rgba(0,0,0,.5) 89%, transparent 99%);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .pool img {
+      border-radius: 50%;
+      -webkit-mask-image: radial-gradient(closest-side, #000 50%, rgba(0,0,0,.55) 72%, transparent 98%);
+              mask-image: radial-gradient(closest-side, #000 50%, rgba(0,0,0,.55) 72%, transparent 98%);
+    }
+  }
+  .hero-art .pool img { animation: settle 1.8s var(--ease-out-expo) both; }
+  @keyframes settle { from { transform: scale(1.035); } to { transform: scale(1); } }
+  @media (prefers-reduced-motion: reduce) { .hero-art .pool img { animation: none; } }
+
+  .hero-strip {
+    display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+    border-top: 1px solid var(--line); padding: 16px 0 22px;
+    font: 500 11.5px/1.5 system-ui, sans-serif; letter-spacing: .14em; text-transform: uppercase; color: var(--muted);
   }
 
-  section { padding: 44px 0; border-top: 1px solid var(--line); }
-  h2 { font-size: 32px; margin: 0 0 24px; }
-  .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
-  .card {
-    background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 22px;
+  /* sections */
+  section { padding: 96px 0 0; }
+  h2 {
+    margin: 0 0 40px; font: 600 clamp(34px, 4vw, 46px)/1.08 "Cormorant Garamond", Georgia, serif;
+    letter-spacing: -.005em;
   }
-  .card svg { width: 34px; height: 34px; stroke: var(--accent); margin-bottom: 12px; }
-  .card h3 { margin: 0 0 8px; font-size: 19px; }
-  .card p { margin: 0; color: var(--muted); font-size: 15.5px; }
+  h2 em { font-style: italic; font-weight: 500; color: var(--amber); }
 
-  .channels { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .inspection-grid { display: grid; grid-template-columns: 1fr 290px; gap: 56px; align-items: start; }
+  .rows { border-top: 1px solid var(--line); }
+  .row { display: grid; grid-template-columns: 86px 230px 1fr; gap: 26px; padding: 30px 0; border-bottom: 1px solid var(--line); }
+  .row-num { font: 600 38px/1 "Cormorant Garamond", Georgia, serif; color: var(--amber); }
+  .row h3 { margin: 2px 0 0; font: 600 18.5px/1.35 "Source Serif 4", Georgia, serif; }
+  .row p { margin: 0; color: var(--muted); font-size: 15.5px; line-height: 1.65; max-width: 56ch; }
+  .inspection-art { padding-top: 10px; }
+
+  .channels { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .channel { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 28px; }
+  .channel h3 { margin: 14px 0 10px; font: 600 19px/1.3 "Source Serif 4", Georgia, serif; }
+  .channel p { margin: 0; color: var(--muted); font-size: 15.5px; line-height: 1.65; }
   .pill {
-    font: 12px system-ui, sans-serif; letter-spacing: .08em; text-transform: uppercase;
-    border: 1px solid var(--candy-deep); color: var(--candy-deep); border-radius: 999px;
-    padding: 3px 10px; display: inline-block; margin-bottom: 10px;
-    background: var(--candy-soft);
+    display: inline-block; font: 600 10.5px/1 system-ui, sans-serif; letter-spacing: .16em; text-transform: uppercase;
+    color: var(--amber); background: var(--amber-soft); border-radius: 999px; padding: 6px 12px;
   }
-  .pill.soon { background: none; }
-  .pill.soon { border-color: var(--line); color: var(--muted); }
+  .pill.soon { background: none; border: 1px solid var(--line); color: var(--muted); }
 
-  .arch { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 18px; }
+  .arch { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 22px; }
   .arch svg { width: 100%; height: auto; display: block; }
   .arch text { font: 13px system-ui, sans-serif; fill: var(--ink); }
   .arch .dim { fill: var(--muted); font-size: 11.5px; }
   .arch rect { fill: none; stroke: var(--line); }
-  .arch .hot { stroke: var(--candy-deep); }
+  .arch .hot { stroke: var(--amber); }
   .arch path { stroke: var(--muted); fill: none; }
 
-  form.waitlist { max-width: 560px; }
-  .frow { display: flex; gap: 10px; flex-wrap: wrap; }
-  .frow input {
-    flex: 1 1 200px; padding: 12px 16px; border-radius: 12px; border: 1px solid var(--line);
-    background: var(--card); color: var(--ink); font: inherit; min-width: 0;
+  form.waitlist { max-width: 580px; }
+  .pillform {
+    display: flex; align-items: center; gap: 10px; border: 1px solid var(--line); background: var(--card);
+    border-radius: 999px; padding: 7px 7px 7px 24px;
   }
-  .frow input:focus { outline: 2px solid var(--candy-deep); outline-offset: -1px; }
+  .pillform:focus-within { border-color: var(--amber); }
+  .pillform input[type="email"] {
+    flex: 1; min-width: 0; background: transparent; border: 0; outline: 0; color: var(--ink);
+    font: 400 16px/1.4 "Source Serif 4", Georgia, serif;
+  }
+  .pillform button {
+    border: 0; border-radius: 999px; background: var(--ink); color: var(--paper); cursor: pointer;
+    font: 600 14px/1 system-ui, sans-serif; padding: 13px 24px; white-space: nowrap;
+    transition: transform .2s var(--ease-out-quint), opacity .2s;
+  }
+  .pillform button:hover { transform: translateY(-1px); opacity: .92; }
+  .siterow { margin: 14px 0 0 24px; }
+  .siterow input {
+    width: min(280px, 100%); background: transparent; border: 0; border-bottom: 1px solid var(--line);
+    padding: 6px 2px; color: var(--ink); font: 400 15px/1.4 "Source Serif 4", Georgia, serif; outline: 0;
+  }
+  .siterow input:focus { border-color: var(--amber); }
   .hp { position: absolute; left: -9999px; opacity: 0; }
-  .form-note { color: var(--muted); font-size: 14px; }
-  .thanks { display: none; background: var(--candy-soft); border-radius: 12px; padding: 14px 18px; }
+  .form-note { color: var(--muted); font-size: 14px; margin: 16px 0 0 24px; }
+  .thanks { display: none; background: var(--amber-soft); border-radius: 14px; padding: 16px 20px; margin-top: 10px; }
 
-  footer { border-top: 1px solid var(--line); padding: 28px 0 40px; color: var(--muted); font-size: 14.5px; }
+  footer { border-top: 1px solid var(--line); margin-top: 96px; padding: 28px 0 44px; color: var(--muted); font-size: 14.5px; }
+  footer a { color: var(--muted); }
+  footer a:hover { color: var(--amber); }
 
-  @media (max-width: 760px) {
-    .hero { flex-direction: column-reverse; text-align: center; padding-top: 36px; }
-    .hero h1 { font-size: 42px; }
-    .hero p.lede { margin-left: auto; margin-right: auto; }
+  @media (max-width: 880px) {
+    .nav-links { display: none; }
+    .hero-main { flex-direction: column-reverse; text-align: center; gap: 8px; justify-content: center; }
+    .hero-copy { max-width: 560px; }
+    .hero .lede { margin-left: auto; margin-right: auto; }
     .cta-row { justify-content: center; }
-    .hero-art { max-width: 240px; }
-    .cards, .channels { grid-template-columns: 1fr; }
+    .hero-art { max-width: 270px; }
+    .eyebrow { justify-content: center; }
+    .inspection-grid { grid-template-columns: 1fr; }
+    .inspection-art { display: none; }
+    .row { grid-template-columns: 52px 1fr; grid-template-rows: auto auto; gap: 8px 18px; }
+    .row-num { font-size: 30px; grid-row: 1 / 3; }
+    .channels { grid-template-columns: 1fr; }
+    section { padding-top: 72px; }
+  }
+  @media (max-width: 560px) {
+    .cta-row { flex-direction: column; align-items: stretch; }
+    .btn-roll { justify-content: center; }
+    .link-soft { text-align: center; border-bottom: 0; }
+    .hero-strip { justify-content: center; text-align: center; }
   }
 </style>
 </head>
 <body>
 
-<div class="wrap">
-  <div class="hero">
-    <div class="hero-copy">
-      <h1>Lucienne</h1>
-      <p class="tag">Drop me a link. I'll bring some clarity.</p>
-      <p class="lede">Lucienne is a conversational website &amp; SEO copilot. Give her an address
-      and she looks under the hood — speed, Core&nbsp;Web&nbsp;Vitals, search visibility, structure —
-      then explains what matters in plain words, and emails your developer the technical details.</p>
-      <div class="cta-row">
-        <a id="talk" class="btn" href="https://3aeprrnzvxpaum6k7vq4qccvd40pcngi.lambda-url.us-east-1.on.aws/">Talk to Lucienne</a>
-        <span class="btn ghost">Text her — soon</span>
+<div class="lamplight" aria-hidden="true"></div>
+<div class="page-grain" aria-hidden="true"></div>
+
+<header class="wrap">
+  <nav class="nav appear appear--down" style="--d:.05s" aria-label="Primary">
+    <a class="wordmark" href="#">Lucienne</a>
+    <div class="nav-links">
+      <a href="#inspection">The inspection</a>
+      <a href="#channels">Channels</a>
+      <a href="#hood">Under the hood</a>
+    </div>
+    <a class="nav-cta" href="https://3aeprrnzvxpaum6k7vq4qccvd40pcngi.lambda-url.us-east-1.on.aws/">Talk to her</a>
+  </nav>
+</header>
+
+<main>
+  <div class="wrap">
+    <div class="hero">
+      <div class="hero-main">
+        <div class="hero-copy">
+          <p class="eyebrow appear appear--soft" style="--d:.22s">Website &amp; SEO copilot</p>
+          <h1>
+            <span class="hl-line"><span style="--d:.42s">Drop me a link.</span></span>
+            <span class="hl-line"><span style="--d:.62s"><em>I'll bring some clarity.</em></span></span>
+          </h1>
+          <p class="lede appear appear--soft" style="--d:.82s">Lucienne is a conversational website and SEO copilot.
+          Give her an address and she looks under the hood: speed, Core&nbsp;Web&nbsp;Vitals, search visibility, structure.
+          She explains what matters in plain words and emails your developer the rest.</p>
+          <div class="cta-row">
+            <a id="talk" class="btn-roll appear appear--btn" style="--d:.96s" href="https://3aeprrnzvxpaum6k7vq4qccvd40pcngi.lambda-url.us-east-1.on.aws/">
+              <span class="btn-roll__label"><span class="btn-roll__inner">
+                <span>Talk to Lucienne</span><span aria-hidden="true">Talk to Lucienne</span>
+              </span></span>
+              <span class="btn-roll__chip" aria-hidden="true">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+              </span>
+            </a>
+            <a class="link-soft appear appear--fade" style="--d:1.1s" href="#waitlist">Texting arrives soon: join the waitlist</a>
+          </div>
+        </div>
+        <div class="hero-art appear appear--fade" style="--d:.5s">
+          <div class="pool">
+            <img id="lulu" src="assets/pose-neutral.png" alt="Lucienne, a chic French inspector holding a glowing hand lantern" width="448" height="448">
+          </div>
+        </div>
+      </div>
+      <div class="hero-strip appear appear--fade" style="--d:1.3s">
+        <span><span id="paris-time">--:--</span> in Paris · the lantern is lit</span>
+        <span>Claude on Amazon Bedrock · Lambda · Polly · SES</span>
       </div>
     </div>
-    <div class="hero-art">
-      <img id="lulu" src="assets/pose-neutral.png" alt="Lucienne, a chic French inspector holding a glowing hand lantern" width="340" height="340">
-    </div>
   </div>
-</div>
 
-<section>
-  <div class="wrap">
-    <h2>What she looks at</h2>
-    <div class="cards">
-      <div class="card">
-        <svg viewBox="0 0 48 48" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M8 34a16 16 0 1 1 32 0"/><path d="M24 34 32 22"/><path d="M6 40h36"/>
+  <section id="inspection">
+    <div class="wrap">
+      <div class="inspection-grid">
+        <div>
+          <h2 data-reveal style="--y:36px">What she <em>looks at</em></h2>
+          <div class="rows">
+            <div class="row" data-reveal style="--d:.05s">
+              <span class="row-num" aria-hidden="true">01</span>
+              <h3>Speed, honestly measured</h3>
+              <p>Real Core Web Vitals from Google PageSpeed: how fast the page paints, how stable it holds,
+              how quickly it responds, translated from milliseconds into meaning.</p>
+            </div>
+            <div class="row" data-reveal style="--d:.15s">
+              <span class="row-num" aria-hidden="true">02</span>
+              <h3>Search visibility</h3>
+              <p>Titles, descriptions, headings, robots rules and sitemaps: the quiet details
+              that decide whether search engines can find and trust a page.</p>
+            </div>
+            <div class="row" data-reveal style="--d:.25s">
+              <span class="row-num" aria-hidden="true">03</span>
+              <h3>The developer report</h3>
+              <p>When you are ready to fix things, she emails a full technical report with findings,
+              evidence and priorities, straight to whoever does the work.</p>
+            </div>
+          </div>
+        </div>
+        <div class="inspection-art" data-reveal style="--x:40px;--y:0px;--dur:.9s">
+          <div class="pool">
+            <img src="assets/pose-inspect.png" alt="Lucienne raising her lantern to inspect" width="448" height="448" loading="lazy">
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="channels">
+    <div class="wrap">
+      <h2 data-reveal style="--y:36px">How to <em>reach her</em></h2>
+      <div class="channels">
+        <div class="channel" data-reveal style="--d:.05s">
+          <span class="pill">Live now</span>
+          <h3>Web chat</h3>
+          <p>Open the chat, paste an address, and talk it through. Turn her voice on and she will
+          answer out loud, avec un petit accent.</p>
+        </div>
+        <div class="channel" data-reveal style="--d:.15s">
+          <span class="pill soon">Almost ready</span>
+          <h3>Text message (SMS &amp; RCS)</h3>
+          <p>Text Lucienne a link from your phone and get the audit as a conversation,
+          powered by AWS End User Messaging. Leave your email below and she will let you know.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="hood">
+    <div class="wrap">
+      <h2 data-reveal style="--y:36px">Under the <em>hood</em></h2>
+      <div class="arch" data-reveal style="--d:.1s">
+        <svg viewBox="0 0 900 300" role="img" aria-label="Architecture: web chat and SMS/RCS reach a Lambda agent running Claude on Amazon Bedrock, which uses page inspection, robots and sitemap checks and PageSpeed vitals, and answers through Amazon Polly, Amazon SES and DynamoDB session memory.">
+          <rect x="20" y="40" width="170" height="60" rx="10"/>
+          <text x="105" y="66" text-anchor="middle">Web chat</text>
+          <text x="105" y="84" text-anchor="middle" class="dim">Lambda Function URL</text>
+          <rect x="20" y="160" width="170" height="60" rx="10"/>
+          <text x="105" y="186" text-anchor="middle">SMS / RCS</text>
+          <text x="105" y="204" text-anchor="middle" class="dim">End User Messaging + SNS</text>
+          <path d="M190 70 h60 q20 0 24 20 l4 18"/>
+          <path d="M190 190 h60 q20 0 24 -20 l4 -18"/>
+          <rect x="290" y="100" width="220" height="80" rx="10" class="hot"/>
+          <text x="400" y="132" text-anchor="middle">Lucienne · agent loop</text>
+          <text x="400" y="152" text-anchor="middle" class="dim">Claude on Amazon Bedrock, in Lambda</text>
+          <path d="M510 120 h70"/>
+          <path d="M510 140 h70"/>
+          <path d="M510 160 h70"/>
+          <rect x="580" y="96" width="150" height="34" rx="8"/>
+          <text x="655" y="118" text-anchor="middle" class="dim">Page inspection</text>
+          <rect x="580" y="138" width="150" height="34" rx="8"/>
+          <text x="655" y="160" text-anchor="middle" class="dim">Robots &amp; sitemap</text>
+          <rect x="580" y="180" width="150" height="34" rx="8"/>
+          <text x="655" y="202" text-anchor="middle" class="dim">PageSpeed vitals</text>
+          <path d="M400 180 v40"/>
+          <rect x="250" y="230" width="140" height="40" rx="8"/>
+          <text x="320" y="255" text-anchor="middle" class="dim">Amazon Polly · voice</text>
+          <rect x="410" y="230" width="150" height="40" rx="8"/>
+          <text x="485" y="255" text-anchor="middle" class="dim">Amazon SES · reports</text>
+          <rect x="580" y="230" width="150" height="40" rx="8"/>
+          <text x="655" y="255" text-anchor="middle" class="dim">DynamoDB · memory</text>
         </svg>
-        <h3>Speed, honestly measured</h3>
-        <p>Real Core Web Vitals from Google PageSpeed — how fast the page paints, how stable it is,
-        how it responds — translated from milliseconds into meaning.</p>
-      </div>
-      <div class="card">
-        <svg viewBox="0 0 48 48" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <circle cx="21" cy="19" r="11"/><path d="M29 27 40 38"/><path d="M16 19h10M21 14v10"/>
-        </svg>
-        <h3>Search visibility</h3>
-        <p>Titles, descriptions, headings, robots rules and sitemaps — the quiet details
-        that decide whether search engines can find and trust a page.</p>
-      </div>
-      <div class="card">
-        <svg viewBox="0 0 48 48" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <rect x="6" y="12" width="36" height="26" rx="4"/><path d="M6 15l18 13 18-13"/>
-        </svg>
-        <h3>The developer report</h3>
-        <p>When you're ready to fix things, she emails a full technical report —
-        findings, evidence and priorities — straight to whoever does the work.</p>
       </div>
     </div>
-  </div>
-</section>
+  </section>
 
-<section>
-  <div class="wrap">
-    <h2>How to reach her</h2>
-    <div class="channels">
-      <div class="card">
-        <span class="pill">Live now</span>
-        <h3>Web chat</h3>
-        <p>Open the chat, paste an address, and talk it through. Turn her voice on and she'll
-        answer out loud — avec un petit accent.</p>
-      </div>
-      <div class="card">
-        <span class="pill soon">Almost ready</span>
-        <h3>Text message (SMS &amp; RCS)</h3>
-        <p>Text Lucienne a link from your phone and get the audit as a conversation,
-        powered by AWS End User Messaging. Leave your email below and she'll let you know.</p>
-      </div>
+  <section id="waitlist">
+    <div class="wrap">
+      <h2 data-reveal style="--y:36px">Have her call on <em>your website</em></h2>
+      <form class="waitlist" id="wl" data-reveal style="--d:.1s">
+        <div class="pillform">
+          <input type="email" id="wl-email" placeholder="you@example.com" required autocomplete="email" aria-label="Email address">
+          <input type="text" id="wl-company" class="hp" tabindex="-1" autocomplete="off" aria-hidden="true">
+          <button type="submit">Keep me posted</button>
+        </div>
+        <p class="siterow"><input type="text" id="wl-site" placeholder="yoursite.com (optional)" aria-label="Your website, optional"></p>
+        <p class="form-note">One email when texting goes live and when she takes on new websites. Nothing else.</p>
+        <p class="thanks" id="wl-thanks">Merci! Lucienne has noted it down. You will hear from her.</p>
+      </form>
     </div>
-  </div>
-</section>
-
-<section>
-  <div class="wrap">
-    <h2>Under the hood</h2>
-    <div class="arch">
-      <svg viewBox="0 0 900 300" role="img" aria-label="Architecture: web chat and SMS/RCS reach a Lambda agent running Claude on Amazon Bedrock, which uses page inspection, robots and sitemap checks and PageSpeed vitals, and answers through Amazon Polly, Amazon SES and DynamoDB session memory.">
-        <rect x="20" y="40" width="170" height="60" rx="10"/>
-        <text x="105" y="66" text-anchor="middle">Web chat</text>
-        <text x="105" y="84" text-anchor="middle" class="dim">Lambda Function URL</text>
-        <rect x="20" y="160" width="170" height="60" rx="10"/>
-        <text x="105" y="186" text-anchor="middle">SMS / RCS</text>
-        <text x="105" y="204" text-anchor="middle" class="dim">End User Messaging + SNS</text>
-        <path d="M190 70 h60 q20 0 24 20 l4 18"/>
-        <path d="M190 190 h60 q20 0 24 -20 l4 -18"/>
-        <rect x="290" y="100" width="220" height="80" rx="10" class="hot"/>
-        <text x="400" y="132" text-anchor="middle">Lucienne — agent loop</text>
-        <text x="400" y="152" text-anchor="middle" class="dim">Claude on Amazon Bedrock, in Lambda</text>
-        <path d="M510 120 h70"/>
-        <path d="M510 140 h70"/>
-        <path d="M510 160 h70"/>
-        <rect x="580" y="96" width="150" height="34" rx="8"/>
-        <text x="655" y="118" text-anchor="middle" class="dim">Page inspection</text>
-        <rect x="580" y="138" width="150" height="34" rx="8"/>
-        <text x="655" y="160" text-anchor="middle" class="dim">Robots &amp; sitemap</text>
-        <rect x="580" y="180" width="150" height="34" rx="8"/>
-        <text x="655" y="202" text-anchor="middle" class="dim">PageSpeed vitals</text>
-        <path d="M400 180 v40"/>
-        <rect x="250" y="230" width="140" height="40" rx="8"/>
-        <text x="320" y="255" text-anchor="middle" class="dim">Amazon Polly — voice</text>
-        <rect x="410" y="230" width="150" height="40" rx="8"/>
-        <text x="485" y="255" text-anchor="middle" class="dim">Amazon SES — reports</text>
-        <rect x="580" y="230" width="150" height="40" rx="8"/>
-        <text x="655" y="255" text-anchor="middle" class="dim">DynamoDB — memory</text>
-      </svg>
-    </div>
-  </div>
-</section>
-
-<section>
-  <div class="wrap">
-    <h2>Have her call on your website</h2>
-    <form class="waitlist" id="wl">
-      <div class="frow">
-        <input type="email" id="wl-email" placeholder="you@example.com" required autocomplete="email">
-        <input type="text" id="wl-site" placeholder="yoursite.com (optional)">
-        <input type="text" id="wl-company" class="hp" tabindex="-1" autocomplete="off" aria-hidden="true">
-        <button class="btn" type="submit">Keep me posted</button>
-      </div>
-      <p class="form-note">One email when texting goes live and when she takes on new websites. Nothing else.</p>
-      <p class="thanks" id="wl-thanks">Merci! Lucienne has noted it down — you'll hear from her.</p>
-    </form>
-  </div>
-</section>
+  </section>
+</main>
 
 <footer>
   <div class="wrap">
@@ -266,6 +452,48 @@
 
 <script src="https://hero-inbox-2026.web.app/inbox.js"></script>
 <script>
+// font gating for entrance choreography, with a hard fallback
+document.fonts.ready.then(() => document.documentElement.classList.add('fonts-ready'));
+setTimeout(() => document.documentElement.classList.add('fonts-ready'), 1500);
+const appearEls = document.querySelectorAll('.appear, .hl-line > span');
+appearEls.forEach((el) => el.addEventListener('animationend', (e) => {
+  if (e.target === el) el.classList.add('is-in');
+}));
+setTimeout(() => appearEls.forEach((el) => el.classList.add('is-in')), 3500);
+
+// scroll reveals
+const revealIO = new IntersectionObserver((entries) => entries.forEach((e) => {
+  if (e.isIntersecting) { e.target.classList.add('is-in'); revealIO.unobserve(e.target); }
+}), { threshold: 0.15, rootMargin: '0px 0px -8% 0px' });
+document.querySelectorAll('[data-reveal]').forEach((el) => revealIO.observe(el));
+
+// lamplight follows the cursor (fine pointers only)
+(() => {
+  if (!matchMedia('(hover: hover) and (pointer: fine)').matches ||
+      matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const lamp = document.querySelector('.lamplight');
+  let tx = 0, ty = 0, x = 0, y = 0, raf = 0, seeded = false;
+  const loop = () => {
+    x += (tx - x) * 0.1; y += (ty - y) * 0.1;
+    lamp.style.setProperty('--lx', x.toFixed(1) + 'px');
+    lamp.style.setProperty('--ly', y.toFixed(1) + 'px');
+    raf = (Math.abs(tx - x) > 0.2 || Math.abs(ty - y) > 0.2) ? requestAnimationFrame(loop) : 0;
+  };
+  addEventListener('pointermove', (e) => {
+    tx = e.clientX; ty = e.clientY;
+    if (!seeded) { x = tx; y = ty; seeded = true; }
+    if (!raf) raf = requestAnimationFrame(loop);
+  }, { passive: true });
+})();
+
+// Paris time in the hero strip
+(() => {
+  const el = document.getElementById('paris-time');
+  const fmt = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' });
+  const tick = () => { el.textContent = fmt.format(new Date()); };
+  tick(); setInterval(tick, 30000);
+})();
+
 // she blinks here too, and lights up when you reach for the chat
 const lulu = document.getElementById('lulu');
 const POSES = { n: 'assets/pose-neutral.png', b: 'assets/pose-blink.png', d: 'assets/pose-delight.png' };
@@ -295,7 +523,8 @@ wl.addEventListener('submit', async (e) => {
       message: site || undefined, lang: 'en', page: '/', source: 'landing'
     });
   } catch (err) { /* she still says thanks; the inbox alert email is the backstop */ }
-  wl.querySelector('.frow').style.display = 'none';
+  wl.querySelector('.pillform').style.display = 'none';
+  wl.querySelector('.siterow').style.display = 'none';
   wl.querySelector('.form-note').style.display = 'none';
   document.getElementById('wl-thanks').style.display = 'block';
   delighted = true; lulu.src = POSES.d;
