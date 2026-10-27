@@ -38,6 +38,30 @@ Lucienne is an autonomous conversational website audit and SEO diagnostic agent.
 Users text a URL via WhatsApp to receive instant technical audits, plain-English
 advice, and developer reports via Amazon SES.
 
+## Why it stands out (Devpost copy, safe wording, no em dashes)
+Paste into "What it does" or "What makes it different":
+
+> **She talks, not just types.** Unlike a text-only chatbot, Lucienne answers every
+> WhatsApp message with a short voice note in her own voice. Her French phrases are
+> spoken by a French voice and the rest in clear English, so she sounds like a
+> character, not a script.
+>
+> **Pay per use, own the agent.** Lucienne runs on AWS End User Messaging Social,
+> Amazon Bedrock and Amazon Polly, billed per message and per reply. There is no
+> monthly chatbot platform fee, and the agent, its prompts and its conversation data
+> live in the business's own AWS account. The same agent also answers on web chat and
+> email.
+
+Wording rules (Oct 27 2026):
+- Do NOT write "Meta's agent can't talk" or "only bot with a voice": not verified in
+  Meta's docs. "Unlike a text-only chatbot" is the safe form.
+- Do NOT claim "a fifth of the cost". Per reply we estimate WhatsApp ~1 cent (2 with a
+  voice note) + Bedrock 1 to 3 cents; Meta Business Agent is billed per token (Meta
+  estimates ~4 to 5 cents per message). Only quote a number after measuring real cost
+  per reply from the AWS bill.
+- Context: since Oct 1 2026 Meta charges per message for service replies inside the
+  24h window too, so "WhatsApp replies are free" is no longer true.
+
 ## Stats to quote (verified Oct 25, 2026 — exact wordings + sources)
 - "57% of small businesses have no SEO strategy at all." — UpCity/Pollfish 2022 survey,
   600 US/CA SMBs (via searchenginejournal.com/no-seo-strategy-2022/438639).
