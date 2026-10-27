@@ -4,23 +4,39 @@ Deadline: **Oct 28, 2026, 1:00 PM PDT** · Judging Nov 6–12 · Winners Nov 19
 
 ## Registered facts
 - ACE Opportunity ID: **O30226356** (status: pending approval) — paste into Devpost
-- Project title: **Lucienne — Conversational Website & SEO Copilot**
+- Project title: **Lucienne · Conversational Website & SEO Copilot** (ACE was registered with an em dash; use the middle dot on Devpost per the no-em-dash rule)
 - Customer: Hero Apps (hero-apps.com) · Partner: Divina Endeavors LLC
 - Campaign code on the opportunity: `AWS CDS Agentic AI Hackathon -Sept. 2026`
 - Tagged products: AWS End User Messaging (RCS/SMS), Amazon SES, AWS EUM Social (WhatsApp)
 
+## Channel status (what to claim — verified Oct 27, 2026)
+- **WhatsApp: LIVE.** +1 857 754 4505 via AWS End User Messaging Social
+  (WABA "Lucienne", events → SNS → Lambda). Replies in text AND Polly voice notes;
+  French phrases spoken with a French voice, the rest in English. Demo this.
+- **Web chat: LIVE.** Lambda Function URL, opt-in voice, mic input, pose animations.
+  This is the judges' zero-setup path; lead with it in the Deployed URL field.
+- **SMS/RCS: built and wired, pending carrier registration.** Two-way EUM → SNS → the
+  same Lambda handler is deployed; the toll-free origination number (+1 855 341 0413)
+  is still in carrier PENDING + needs toll-free registration, and RCS in sandbox only
+  delivers to registered test devices. Say exactly that — do not demo SMS live.
+- **Email: LIVE.** SES developer report (sandbox, allowlisted recipient — qualifies
+  per the rules).
+
 ## What to submit
-- [ ] Repo URL (public + MIT license at top of About, or private shared with judge accounts — see hackathon GitHub README for the accounts)
-- [ ] Architecture diagram (mermaid in README; export a PNG for Devpost)
+- [x] Repo URL: https://github.com/tanDivina/lucienne (public, MIT)
+- [ ] Architecture diagram (mermaid in README; export a PNG for Devpost — the landing
+      page's "Under the hood" SVG is the same diagram, screenshot-able)
 - [ ] Text description (~short; see pitch below)
 - [ ] ~3-minute demo video (public YouTube/Vimeo, no copyrighted music)
-- [ ] Deployed URL = the stack's WebDemoUrl output (+ RCS/SMS demo instructions)
+- [x] Deployed URL: https://3aeprrnzvxpaum6k7vq4qccvd40pcngi.lambda-url.us-east-1.on.aws/
+      (landing: https://lucienne.hero-apps.com) — add the WhatsApp number for judges
+      who want the messaging flow: +1 857 754 4505
 - [ ] ACE opportunity ID
 
-## 200-char pitch (already used in ACE)
+## 200-char pitch (ACE wording kept; Devpost description may update RCS → WhatsApp)
 Lucienne is an autonomous conversational website audit and SEO diagnostic agent.
-Users text a URL via RCS to receive instant technical audits, plain-English advice,
-and developer reports via Amazon SES.
+Users text a URL via WhatsApp to receive instant technical audits, plain-English
+advice, and developer reports via Amazon SES.
 
 ## Stats to quote (verified Oct 25, 2026 — exact wordings + sources)
 - "57% of small businesses have no SEO strategy at all." — UpCity/Pollfish 2022 survey,
@@ -41,19 +57,21 @@ and developer reports via Amazon SES.
    agencies charge three thousand dollars a month, and the reports look like this
    (confusing dashboard). Meanwhile, page two of Google gets a fifth of one percent
    of clicks." Then: "Lucienne is a text message."
-2. (0:20) Meet Lucienne: phone in hand, text a URL via RCS/SMS. She answers in
-   plain words, ranked by impact.
-3. (1:00) Conversation: follow-up question ("why does that matter?"), quick replies.
+2. (0:20) Meet Lucienne: phone in hand, WhatsApp +1 857 754 4505, send a URL.
+   She answers in plain words, ranked by impact — then a voice note arrives and
+   she SPEAKS the verdict, avec un petit accent. (The voice note is the wow beat.)
+3. (1:00) Conversation: follow-up question ("why does that matter?") in WhatsApp,
+   or switch to the web chat for the big-screen version with her pose animations.
 4. (1:30) "Email me the full report" → SES developer briefing lands in inbox, scroll it.
-5. (2:00) Architecture: diagram walk-through — EUM two-way → SNS → Lambda →
-   Bedrock Converse tool loop → SES. Emphasize at-runtime CDS usage.
-6. (2:40) Close: real customer (Hero Apps), ACE opportunity, what's next (WhatsApp).
+5. (2:00) Architecture: diagram walk-through — EUM Social (WhatsApp) + EUM SMS/RCS
+   (wired, pending carrier registration) → SNS → Lambda → Bedrock Converse tool loop
+   → Polly → SES → DynamoDB. Emphasize at-runtime CDS usage.
+6. (2:40) Close: real customer (Hero Apps), ACE opportunity, what's next
+   (toll-free SMS once registration clears; RCS out of sandbox).
 
-## Manual AWS setup still needed (one-time)
-1. Bedrock model access for Claude Sonnet 4.5 (marketplace agreement).
-2. SES: dorien.vda@gmail.com verified ✓ (sandbox is fine per rules — SMTP/sandbox qualifies).
-3. EUM: finish verifying +507 destination number (OTP pending since Oct 14),
-   then either an RCS test agent (console → RCS → create agent → add test device)
-   or a simulator/toll-free number; enable two-way → point at stack's InboundTopicArn.
-4. PSI API key (free, Google Cloud console → PageSpeed Insights API) → redeploy with
-   PSI_API_KEY set.
+## One-time AWS setup — all DONE
+1. Bedrock model access for Claude Sonnet 4.5 ✓ (Oct 24)
+2. SES: dorien.vda@gmail.com verified ✓ (sandbox qualifies per rules)
+3. EUM: +507 destination verified ✓ · WhatsApp WABA live ✓ (Oct 26) ·
+   toll-free SMS still pending carrier + TF registration (not needed for submission)
+4. PSI API key set on the Lambda ✓ (keep `PSI_API_KEY` exported on any CFN redeploy)

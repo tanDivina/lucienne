@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Lucienne</title>
-<meta name="description" content="Lucienne — conversational website & SEO copilot. Drop a link, get clarity.">
+<meta name="description" content="Lucienne, a conversational website & SEO copilot. Drop a link, get clarity.">
 <link rel="icon" type="image/png" href="assets/favicon.png">
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
 <meta property="og:title" content="Lucienne">
@@ -160,7 +160,7 @@
     <input id="inp" placeholder="Paste a website address…" autocomplete="off" autofocus>
     <button id="send" type="submit">Send</button>
   </div>
-  <p class="note">Lucienne inspects the page, checks Core Web Vitals, and can email the full developer report. Built on Amazon Bedrock, AWS End User Messaging &amp; Amazon SES — her voice is Amazon Polly.</p>
+  <p class="note">Lucienne inspects the page, checks Core Web Vitals, and can email the full developer report. Built on Amazon Bedrock, AWS End User Messaging &amp; Amazon SES; her voice is Amazon Polly.</p>
 </form>
 
 <script>
@@ -304,7 +304,7 @@ async function ask(text) {
     });
     const data = await r.json();
     wait.classList.remove('thinking');
-    setText(wait.querySelector('.t'), data.reply || data.error || 'Something went quiet on my end — try once more?');
+    setText(wait.querySelector('.t'), data.reply || data.error || 'Something went quiet on my end. Try once more?');
     setMood('idle');
     if (data.audio && voiceOn) speakReply(data.audio);
     else delight();
@@ -325,7 +325,7 @@ f.addEventListener('submit', (e) => {
   ask(text);
 });
 
-add('Lucienne', "Bonjour! I'm Lucienne. Give me a website address and I'll look under the hood — speed, search visibility, the lot — and explain it in plain words.");
+add('Lucienne', "Bonjour! I'm Lucienne. Give me a website address and I'll look under the hood: speed, search visibility, the lot. And explain it in plain words.");
 chips(['Audit hero-apps.com', 'What do you check, exactly?']);
 </script>
 </body>
