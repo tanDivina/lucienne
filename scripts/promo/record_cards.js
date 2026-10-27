@@ -21,7 +21,7 @@ const dur = (f) => {
 const LEAD = 0.3; // narration starts this far into each card
 const SCENES = [
   ['hook', 'n_hook'], ['hook2', 'n_hook2'], ['meet', 'n_meet'],
-  ['arch', 'n_arch'], ['hub', 'n_hub'], ['biz', 'n_biz'], ['end', 'n_outro'],
+  ['arch', 'n_arch'], ['hub', 'n_hub'], ['numbers', 'n_numbers'], ['biz', 'n_biz_fallback'], ['end', 'n_close'],
 ];
 
 async function recordScene(browser, scene, seconds) {

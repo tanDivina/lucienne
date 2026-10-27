@@ -17,7 +17,8 @@
 set -e
 export PATH="$HOME/Library/Android/sdk/platform-tools:$PATH"
 
-OUT="$HOME/Projects/lucienne/video/whatsapp-demo-$(date +%Y%m%d-%H%M%S).mp4"
+OUT="$HOME/Desktop/Lucienne_Video/v3_work/whatsapp_take.mkv"
+[ -f "$OUT" ] && mv "$OUT" "${OUT%.mkv}-$(date +%H%M%S).mkv"  # keep earlier takes
 mkdir -p "$(dirname "$OUT")"
 
 adb wait-for-device
@@ -43,4 +44,4 @@ adb shell cmd notification set_dnd on
 
 echo "Recording to $OUT"
 echo "Do the conversation on the phone now. Ctrl+C when done."
-scrcpy --record "$OUT" --max-fps 30 --stay-awake
+scrcpy --record "$OUT" --record-format mkv --max-fps 30 --stay-awake

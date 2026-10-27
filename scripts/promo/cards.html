@@ -49,8 +49,9 @@
   #meet p { font-size: 44px; font-style: italic; color: var(--muted); margin-top: 22px; }
 
   /* architecture */
-  #arch, #hub, #biz { flex-direction: column; }
-  #arch h2, #hub h2, #biz h2 { font-size: 64px; margin: 10px 0 40px; }
+  #arch, #hub, #biz, #numbers { flex-direction: column; }
+  #arch h2, #hub h2, #biz h2, #numbers h2 { font-size: 64px; margin: 10px 0 40px; }
+  #numbers .stat { margin: 20px 0 50px; }
   .flow { position: relative; flex: 1; }
   .node { position: absolute; background: var(--card); border: 1.5px solid var(--line); border-radius: 16px;
     padding: 18px 22px; width: 250px; box-shadow: 0 10px 30px rgba(80, 60, 20, .08); }
@@ -103,7 +104,7 @@
     <div class="big">57%</div>
     <p>of small businesses have no SEO strategy at all.<span class="src">UpCity / Pollfish survey of 600 small businesses, 2022</span></p>
   </div>
-  <div class="stat in" style="animation-delay:5.5s">
+  <div class="stat in" style="animation-delay:7.3s">
     <div class="big">$3k<small>/mo</small></div>
     <p>a typical SEO agency retainer.<span class="src">Ahrefs pricing survey ($2,819), Arc Intermedia (~$3,200)</span></p>
   </div>
@@ -168,13 +169,26 @@
   </div>
 </section>
 
+<section class="scene" id="numbers">
+  <div class="kicker in">Measured on the live agent</div>
+  <h2 class="in" style="animation-delay:.15s">What one reply really costs</h2>
+  <div class="stat in" style="animation-delay:.5s">
+    <div class="big">~3¢</div>
+    <p>per reply, all in: Claude on Amazon Bedrock, WhatsApp delivery and her voice note, at AWS list prices.<span class="src">Bedrock token usage from the Converse API, cross-checked with 3 days of CloudWatch, Oct 2026</span></p>
+  </div>
+  <div class="facts">
+    <div class="in" style="animation-delay:5.6s">Billed per message.<br>No monthly platform fee.</div>
+    <div class="in" style="animation-delay:6.6s">Runs in the business's<br>own AWS account.</div>
+  </div>
+</section>
+
 <section class="scene" id="biz">
   <div class="kicker in">The partner story</div>
   <h2 class="in" style="animation-delay:.15s">A new workload for clients we already serve</h2>
   <div class="rows">
     <div class="row in" style="animation-delay:.6s"><span class="kicker">Customer #1</span><p>Hero Apps<small>ACE opportunity O30226356</small></p></div>
     <div class="row in" style="animation-delay:5.2s"><span class="kicker">Next</span><p>Tour operators and small businesses<small>we already build websites and SEO for</small></p></div>
-    <div class="row in" style="animation-delay:14.5s"><span class="kicker">Roadmap</span><p>Amazon Bedrock AgentCore<small>Runtime and Memory for multi-tenant scale</small></p></div>
+    <div class="row in" style="animation-delay:7.6s"><span class="kicker">Roadmap</span><p>Amazon Bedrock AgentCore<small>Runtime and Memory for multi-tenant scale</small></p></div>
   </div>
 </section>
 
@@ -194,8 +208,8 @@
   document.getElementById(scene).classList.add('on');
   // Light the architecture path in the order the narrator describes it.
   const STEPS = scene === 'arch' ? [
-    [5.8, ['n-wa', 'n-web']], [7.1, ['n-eum', 'w1', 'w1b']], [10.2, ['n-sns', 'w2']], [11.9, ['n-lam', 'w3']],
-    [15.2, ['n-tools', 'w5']], [17.2, ['n-ddb', 'w6']], [19.9, ['n-polly', 'w7']], [21.3, ['n-ses', 'w8']],
+    [3.6, ['n-wa', 'n-web']], [4.8, ['n-eum', 'w1', 'w1b']], [6.6, ['n-sns', 'w2']], [7.5, ['n-lam', 'w3']],
+    [8.6, ['n-tools', 'w5']], [11.3, ['n-ddb', 'w6']], [14.3, ['n-polly', 'w7']], [15.9, ['n-ses', 'w8']],
   ] : [];
   // seek(t): frame-exact rendering for the recorder (no real-time drift).
   window.seek = (t) => {

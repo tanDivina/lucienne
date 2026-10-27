@@ -1,18 +1,29 @@
 {
-  "voiceId": "pNInz6obpgDQGcFmaJgB",
+  "voiceId": "fcncnsSPje72BTK2ZpQL",
+  "voiceName": "Dorien (phone, garden, no denoise), the clone used for Rooted. Never de-ess it.",
   "modelId": "eleven_v4",
-  "voiceSettings": { "stability": 0.45, "similarity_boost": 0.8, "style": 0.25 },
+  "seed": 7,
+  "voiceSettings": {
+    "stability": 0.6,
+    "similarity_boost": 0.85,
+    "style": 0,
+    "use_speaker_boost": true,
+    "speed": 1.08
+  },
   "lines": {
-    "n_hook": "Fifty-seven percent of small businesses have no S.E.O. strategy at all. And no wonder: an agency retainer runs around three thousand dollars a month.",
-    "n_hook2": "Meanwhile, page two of Google gets less than a fifth of one percent of the clicks.",
-    "n_meet": "So we turned S.E.O. into a conversation. Meet Lucienne.",
-    "n_whatsapp": "Send her a website on WhatsApp. She inspects the live page and answers in plain words, ranked by impact. Then she sends a voice note.",
-    "n_web": "The same agent answers on the web. Here she audits Hero Apps, our first customer.",
-    "n_follow": "Ask why something matters, and she explains it the way a person would. Not a dashboard.",
-    "n_email": "For the developer, she writes the full technical briefing, and sends it with Amazon S.E.S.",
-    "n_arch": "Under the hood, Lucienne follows the A.W.S. reference pattern for agentic messaging. WhatsApp arrives through A.W.S. End User Messaging Social, into Amazon S.N.S. and Lambda. A Claude agent on Amazon Bedrock runs the audit tools. DynamoDB remembers the conversation, Polly gives her a voice, and S.E.S. delivers the report.",
-    "n_hub": "One copilot across every channel. WhatsApp, web and email are live today. S.M.S. and R.C.S. are wired to the same agent, and waiting on carrier registration. Billed per message, running in the business's own A.W.S. account.",
-    "n_biz": "Hero Apps is customer number one, with an ACE opportunity registered. Next, we bring Lucienne to the tour operators and small businesses we already build websites for. A new workload for clients we already serve. Then Bedrock AgentCore, for multi-tenant scale.",
-    "n_outro": "Lucienne. Your website, inspected. Just send a message."
+    "n_intro_fallback": "I build websites for small businesses in Panama. Almost none of them can afford an SEO agency.",
+    "n_hook": "Fifty-seven percent of small businesses have no SEO strategy at all. No wonder. An agency retainer runs about three thousand dollars a month.",
+    "n_hook2": "And page two of Google? A fifth of one percent of clicks.",
+    "n_meet": "Lucienne is a text message.",
+    "n_wa1": "Text her any link on WhatsApp. She reads the page, checks what Google sees, and answers in plain words, ranked by impact.",
+    "n_voice": "Then she says it out loud.",
+    "n_speed": "Google's own data: fifty-three percent of mobile visits are abandoned when a page takes more than three seconds to load. Lucienne found five point nine, and explained exactly why it matters.",
+    "n_web": "She lives on the web too. While she inspects, her lantern glows. And when the results land, she smiles.",
+    "n_email": "Ask for the full report, and a developer briefing lands in your inbox. Every finding with impact, evidence, and the exact fix.",
+    "n_hub": "One copilot, every channel. The same agent and the same tools answer on WhatsApp, web chat and email, with SMS wired and waiting on carrier registration.",
+    "n_arch": "Under the hood, it is all AWS. Messages come in through End User Messaging, into SNS and Lambda. Amazon Bedrock runs the agent loop, DynamoDB remembers the conversation, Polly gives her the voice, and SES delivers the report.",
+    "n_biz_fallback": "Hero Apps is a real customer, registered as an ACE opportunity. Next up: the tour operators and small businesses we already build websites for.",
+    "n_close": "Lucienne. Drop her a link. She'll bring some clarity.",
+    "n_numbers": "Measured on the live agent: about three cents per reply, voice note included. And it runs in the business's own AWS account."
   }
 }
