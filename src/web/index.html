@@ -256,13 +256,23 @@ if (SR) {
   };
 }
 
+// Lucienne writes her French in _underscores_, WhatsApp-style; show it as italics.
+function setText(el, text) {
+  el.textContent = '';
+  text.split(/_([^_\n]{1,80})_/).forEach((part, i) => {
+    if (!part) return;
+    if (i % 2) { const em = document.createElement('em'); em.textContent = part; el.appendChild(em); }
+    else el.appendChild(document.createTextNode(part));
+  });
+}
+
 function add(who, text, extra) {
   const m = document.createElement('div');
   m.className = 'msg ' + (who === 'You' ? 'me' : '') + (extra || '');
   m.innerHTML = (who === 'You' ? '' : '<img class="avatar" src="assets/avatar.png" alt="" width="34" height="34">') +
     '<div class="bubble"><div class="who"></div><span class="t"></span></div>';
   m.querySelector('.who').textContent = who;
-  m.querySelector('.t').textContent = text;
+  setText(m.querySelector('.t'), text);
   log.appendChild(m);
   m.scrollIntoView({behavior: 'smooth', block: 'end'});
   return m;
@@ -294,7 +304,7 @@ async function ask(text) {
     });
     const data = await r.json();
     wait.classList.remove('thinking');
-    wait.querySelector('.t').textContent = data.reply || data.error || 'Something went quiet on my end — try once more?';
+    setText(wait.querySelector('.t'), data.reply || data.error || 'Something went quiet on my end — try once more?');
     setMood('idle');
     if (data.audio && voiceOn) speakReply(data.audio);
     else delight();

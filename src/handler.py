@@ -69,8 +69,14 @@ def _handle_whatsapp(msg: dict) -> None:
 
     for change in entry.get("changes", []):
         value = change.get("value") or {}
+        for status in value.get("statuses", []):
+            if status.get("status") == "failed":
+                print("whatsapp delivery failed:", json.dumps(status.get("errors"))[:500])
         for inbound in value.get("messages", []):  # absent on delivery-status events
             sender = inbound.get("from", "")
+            # Meta's webhook gives a bare wa_id; EUM wants E.164 with "+".
+            if sender and not sender.startswith("+"):
+                sender = "+" + sender
             if not sender or not origination:
                 print("whatsapp event missing sender or origination:", json.dumps(msg)[:500])
                 continue
@@ -240,16 +246,48 @@ def _speech_excerpt(text: str) -> str:
     return out + " ... The full details are in your chat."
 
 
+_FRENCH_WORDS = re.compile(
+    r"_([^_\n]{1,80})_|\b(Mais bien s[ûu]r|Mais oui|Eh bien|Oh l[àa] l[àa]|Bien s[ûu]r|Mon Dieu|Bonjour|Bonsoir|Alors|Voil[àa]|Bon|Merci|"
+    r"Magnifique|Parfait|Exactement|Tr[èe]s bien|D'accord|Enchant[ée]e?)\b"
+)
+
+
+def _speak(text: str, voice: str) -> bytes:
+    # Neural voices ignore SSML <lang>, so French words get a French voice of their own.
+    # Same sample rate on every segment so the MP3 chunks concatenate cleanly.
+    resp = _polly.synthesize_speech(
+        Engine="neural", VoiceId=voice, OutputFormat="mp3", SampleRate="24000", Text=text,
+    )
+    return _strip_id3(resp["AudioStream"].read())
+
+
+def _strip_id3(mp3: bytes) -> bytes:
+    # Each Polly segment starts with an ID3 tag; tags mid-stream make WhatsApp drop the note.
+    if mp3[:3] == b"ID3" and len(mp3) > 10:
+        size = (mp3[6] << 21) | (mp3[7] << 14) | (mp3[8] << 7) | mp3[9]
+        mp3 = mp3[10 + size + (10 if mp3[5] & 0x10 else 0):]
+    if len(mp3) > 128 and mp3[-128:-125] == b"TAG":
+        mp3 = mp3[:-128]
+    return mp3
+
+
 def _synthesize_bytes(text: str) -> bytes | None:
-    """Lucienne's voice: Polly's Léa (fr-FR neural) reading English = French accent."""
+    """Lucienne's voice: neural English, with French interjections spoken by a French voice."""
+    english = os.environ.get("LUCIENNE_VOICE", "Amy")
+    french = os.environ.get("LUCIENNE_FRENCH_VOICE", "Lea")
     try:
-        resp = _polly.synthesize_speech(
-            Engine="neural",
-            VoiceId=os.environ.get("LUCIENNE_VOICE", "Lea"),
-            OutputFormat="mp3",
-            Text=_speechify(_speech_excerpt(text))[:2900],
-        )
-        return resp["AudioStream"].read()
+        speech = _speechify(_speech_excerpt(text))[:2900]
+        audio, pos = b"", 0
+        for m in _FRENCH_WORDS.finditer(speech):
+            before = speech[pos:m.start()].replace("_", "").strip(" ,-")
+            if before:
+                audio += _speak(before, english)
+            audio += _speak(m.group(1) or m.group(0), french)
+            pos = m.end()
+        rest = speech[pos:].replace("_", "").strip(" ,-")
+        if rest:
+            audio += _speak(rest, english)
+        return audio or None
     except Exception as exc:  # voice is a garnish; never fail the reply over it
         print("polly error:", exc)
         return None
