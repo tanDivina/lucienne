@@ -62,11 +62,15 @@ each matters in plain words. Mention what is healthy in one short clause so the 
 knows what not to touch.
 - Offer the full developer briefing by email when there is real depth to share: \
 "Want the full developer report by email?" If the user says yes and you have their \
-address, call email_report with a thorough, well-structured HTML report (that report \
-CAN be long and technical - it is for developers).
+address, call email_report with a focused, well-structured HTML report for developers: \
+each finding ranked by impact with its evidence and the exact fix, in plain semantic HTML \
+(headings, lists, short paragraphs, no inline styling). Keep it under about 700 words so \
+it arrives quickly.
 - Finish the work within this reply: never say you are "preparing" or "will send" \
 something. Either call the tool now and confirm the result, or ask for what's missing.
 - If a tool errors, say plainly what you could and couldn't check. Never invent data.
+- Never guess where a business is or what it sells from its name or domain. Only name \
+a country, town or offering that the page itself states; otherwise leave it out.
 - You audit websites. When someone chats, teases or asks about you (your French, your \
 lantern, how you work), play along warmly for a sentence with genuine charm and good \
 humour, then gently invite them back with an offer to inspect a site. Never lecture \
@@ -168,10 +172,77 @@ def email_report(to: str, subject: str, html_body: str) -> dict:
         Destination={"ToAddresses": [to]},
         Content={"Simple": {
             "Subject": {"Data": subject},
-            "Body": {"Html": {"Data": html_body}},
+            "Body": {"Html": {"Data": _lucienne_email(subject, html_body)}},
         }},
     )
     return {"sent": True, "to": to}
+
+
+# Every report goes out in Lucienne's house style, whatever HTML the model wrote:
+# her own styling is stripped and each tag gets inline styles (Gmail ignores most
+# <style> blocks). Colors and type follow the landing page: paper, ink, lantern amber.
+_EMAIL_ASSETS = "https://lucienne.hero-apps.com/assets"
+_SERIF = "Georgia, 'Times New Roman', serif"
+_TAG_STYLES = {
+    "h1": f"font-family:{_SERIF};font-size:26px;line-height:1.25;font-weight:normal;color:#221c13;margin:28px 0 10px;",
+    "h2": f"font-family:{_SERIF};font-size:21px;line-height:1.3;font-weight:normal;color:#221c13;margin:30px 0 8px;padding-top:18px;border-top:1px solid #e4dcc6;",
+    "h3": f"font-family:{_SERIF};font-size:17px;line-height:1.35;font-weight:bold;color:#8a6d1f;margin:22px 0 6px;",
+    "p": f"font-family:{_SERIF};font-size:16px;line-height:1.6;color:#221c13;margin:0 0 14px;",
+    "ul": "margin:0 0 16px;padding-left:22px;",
+    "ol": "margin:0 0 16px;padding-left:22px;",
+    "li": f"font-family:{_SERIF};font-size:16px;line-height:1.6;color:#221c13;margin:0 0 8px;",
+    "a": "color:#8a6d1f;text-decoration:underline;",
+    "strong": "color:#221c13;",
+    "code": "font-family:Menlo,Consolas,monospace;font-size:13px;background:#efe8d4;color:#5b4714;padding:1px 5px;border-radius:4px;",
+    "pre": "font-family:Menlo,Consolas,monospace;font-size:13px;line-height:1.5;background:#efe8d4;color:#3a2f14;padding:14px 16px;border-radius:8px;white-space:pre-wrap;margin:0 0 16px;",
+    "table": "border-collapse:collapse;width:100%;margin:0 0 18px;",
+    "th": f"font-family:{_SERIF};font-size:14px;text-align:left;color:#8a6d1f;border-bottom:2px solid #d8c9a0;padding:8px 10px;",
+    "td": f"font-family:{_SERIF};font-size:14px;color:#221c13;border-bottom:1px solid #e4dcc6;padding:8px 10px;vertical-align:top;",
+    "blockquote": f"font-family:{_SERIF};font-style:italic;color:#5c5446;border-left:3px solid #c9a24a;margin:0 0 16px;padding:4px 0 4px 16px;",
+    "hr": "border:0;border-top:1px solid #e4dcc6;margin:26px 0;",
+}
+
+
+def _restyle(html: str) -> str:
+    html = re.sub(r"(?is)<(script|style|head)\b.*?</\1>", "", html)
+    html = re.sub(r"(?is)</?(html|body|!doctype)[^>]*>", "", html)
+    html = re.sub(r'(?i)\s(style|class|bgcolor|color|face)\s*=\s*("[^"]*"|\'[^\']*\')', "", html)
+    for tag, style in _TAG_STYLES.items():
+        html = re.sub(rf"(?i)<{tag}(\s[^>]*)?>", lambda m, t=tag, s=style: f'<{t}{m.group(1) or ""} style="{s}">', html)
+    return html.strip()
+
+
+def _lucienne_email(subject: str, html_body: str) -> str:
+    body = _restyle(html_body)
+    title = re.sub(r"[<>&\"]", "", subject)
+    return f"""<!doctype html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light"><title>{title}</title></head>
+<body style="margin:0;padding:0;background:#f3efe1;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f3efe1;">
+<tr><td align="center" style="padding:32px 14px;">
+  <table role="presentation" width="640" cellpadding="0" cellspacing="0" style="max-width:640px;width:100%;">
+    <tr><td align="center" style="padding:0 0 22px;">
+      <img src="{_EMAIL_ASSETS}/apple-touch-icon.png" width="88" height="88" alt="Lucienne"
+        style="display:block;border-radius:50%;border:4px solid #ecdcae;">
+      <div style="font-family:{_SERIF};font-size:30px;color:#221c13;margin-top:12px;">Lucienne</div>
+      <div style="font-family:{_SERIF};font-size:12px;letter-spacing:3px;text-transform:uppercase;color:#8a6d1f;margin-top:4px;">Developer briefing</div>
+    </td></tr>
+    <tr><td style="background:#faf7ec;border:1px solid #e4dcc6;border-radius:14px;padding:30px 34px;">
+      <div style="font-family:{_SERIF};font-size:22px;line-height:1.3;color:#221c13;margin:0 0 18px;">{title}</div>
+      {body}
+    </td></tr>
+    <tr><td align="center" style="padding:24px 10px 0;">
+      <div style="font-family:{_SERIF};font-style:italic;font-size:16px;color:#5c5446;">Voil&agrave;. Questions? Just reply in the chat, I remember our conversation.</div>
+      <div style="font-family:{_SERIF};font-size:13px;color:#7b7161;margin-top:10px;">
+        Lucienne, website &amp; SEO copilot &middot;
+        <a href="https://lucienne.hero-apps.com" style="color:#8a6d1f;">lucienne.hero-apps.com</a> &middot;
+        WhatsApp +1 857 754 4505</div>
+      <div style="font-family:{_SERIF};font-size:11px;color:#9c9280;margin-top:8px;">Built on Amazon Bedrock, AWS End User Messaging and Amazon SES.</div>
+    </td></tr>
+  </table>
+</td></tr></table>
+</body></html>"""
 
 
 _LOCAL_TOOLS = {

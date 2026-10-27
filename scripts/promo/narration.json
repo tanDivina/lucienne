@@ -1,0 +1,18 @@
+{
+  "voiceId": "pNInz6obpgDQGcFmaJgB",
+  "modelId": "eleven_v4",
+  "voiceSettings": { "stability": 0.45, "similarity_boost": 0.8, "style": 0.25 },
+  "lines": {
+    "n_hook": "Fifty-seven percent of small businesses have no S.E.O. strategy at all. And no wonder: an agency retainer runs around three thousand dollars a month.",
+    "n_hook2": "Meanwhile, page two of Google gets less than a fifth of one percent of the clicks.",
+    "n_meet": "So we turned S.E.O. into a conversation. Meet Lucienne.",
+    "n_whatsapp": "Send her a website on WhatsApp. She inspects the live page and answers in plain words, ranked by impact. Then she sends a voice note.",
+    "n_web": "The same agent answers on the web. Here she audits Hero Apps, our first customer.",
+    "n_follow": "Ask why something matters, and she explains it the way a person would. Not a dashboard.",
+    "n_email": "For the developer, she writes the full technical briefing, and sends it with Amazon S.E.S.",
+    "n_arch": "Under the hood, Lucienne follows the A.W.S. reference pattern for agentic messaging. WhatsApp arrives through A.W.S. End User Messaging Social, into Amazon S.N.S. and Lambda. A Claude agent on Amazon Bedrock runs the audit tools. DynamoDB remembers the conversation, Polly gives her a voice, and S.E.S. delivers the report.",
+    "n_hub": "One copilot across every channel. WhatsApp, web and email are live today. S.M.S. and R.C.S. are wired to the same agent, and waiting on carrier registration. Billed per message, running in the business's own A.W.S. account.",
+    "n_biz": "Hero Apps is customer number one, with an ACE opportunity registered. Next, we bring Lucienne to the tour operators and small businesses we already build websites for. A new workload for clients we already serve. Then Bedrock AgentCore, for multi-tenant scale.",
+    "n_outro": "Lucienne. Your website, inspected. Just send a message."
+  }
+}
