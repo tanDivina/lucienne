@@ -10,6 +10,7 @@ Lucienne is a French SEO inspector you can text ([0:30](https://youtu.be/5yWoRUs
 
 - She fetches the live page and replies with the audit ([0:41](https://youtu.be/5yWoRUs01sM?t=41)). The real reply took 13.5 seconds.
 - She follows each reply with a voice note ([0:48](https://youtu.be/5yWoRUs01sM?t=48)). French phrases are spoken by a French voice and the rest in English.
+- You can talk to her too. Send a voice note and Amazon Transcribe writes it out (English, French, Spanish or Dutch, detected automatically) before she answers. I added this on Oct 28, after recording the demo.
 - I ask her to check the speed ([1:05](https://youtu.be/5yWoRUs01sM?t=65)). She runs Google PageSpeed Insights and reports a mobile Largest Contentful Paint of 5.9 seconds, with why it matters ([1:08](https://youtu.be/5yWoRUs01sM?t=68)). That reply took 22.5 seconds.
 - She remembers the conversation, so "why does that matter?" or "how do I fix it?" gets an answer in context.
 - The same agent runs a web chat with voice and microphone input ([1:29](https://youtu.be/5yWoRUs01sM?t=89)). Her lantern glows while she inspects.
@@ -23,11 +24,12 @@ Her checks: HTTP status, redirects, time to first byte, page weight, title, meta
 - AWS End User Messaging Social receives WhatsApp messages and delivers them through Amazon SNS to an AWS Lambda written in Python with only the standard library.
 - The Lambda runs a Bedrock Converse tool-use loop with Claude Sonnet 4.5 and four tools: `inspect_page`, `check_robots_sitemap`, `core_web_vitals` and `email_report`.
 - Replies go back through `SendWhatsAppMessage`. Amazon Polly renders the voice note, which is uploaded with `PostWhatsAppMessageMedia` (staged in Amazon S3) and sent as audio.
+- Inbound voice notes are copied to S3 with `GetWhatsAppMessageMedia` and transcribed by Amazon Transcribe. The bucket deletes them after a day, and the transcription job is deleted after the reply.
 - Amazon DynamoDB keeps the conversation memory with a TTL. Amazon SES sends the developer briefing.
 - The web chat is served by the same function through a Lambda Function URL.
 - Everything deploys from one CloudFormation template and a shell script.
 
-AWS CDS services used at runtime: AWS End User Messaging Social (WhatsApp) and Amazon SES, with AWS End User Messaging SMS/RCS wired. Plus Amazon Bedrock, Polly, Lambda, SNS, DynamoDB and S3.
+AWS CDS services used at runtime: AWS End User Messaging Social (WhatsApp) and Amazon SES, with AWS End User Messaging SMS/RCS wired. Plus Amazon Bedrock, Polly, Transcribe, Lambda, SNS, DynamoDB and S3.
 
 ## Cost ([2:23](https://youtu.be/5yWoRUs01sM?t=143))
 Measured on the live agent: about 1 to 2 cents of AI per reply, and about 3 cents with WhatsApp delivery and a voice note, at list prices. Billing is per use, with no monthly chatbot platform fee, and the agent, its prompts and its conversation data live in the business's own AWS account.
