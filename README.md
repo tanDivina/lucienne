@@ -16,7 +16,7 @@ Hackathon -Sept. 2026*) by Divina Endeavors LLC for customer **Hero Apps**.
   No login, no SaaS onboarding.
 - **Talks back.** Web chat has opt-in voice and mic input; on WhatsApp she follows
   each reply with an **Amazon Polly** voice note: English delivery, and her French
-  asides spoken by a French voice.
+  asides spoken by a French voice. Send her a voice note and **Amazon Transcribe** writes it out first.
 - **Inspects for real.** An agentic core on **Amazon Bedrock** (Claude, Converse API
   tool-use) decides which inspections the conversation needs and runs them:
   - `inspect_page`: status, redirect chain, TTFB, page weight, title/meta/canonical,
@@ -57,6 +57,7 @@ flowchart LR
 | AWS End User Messaging (RCS/SMS, two-way) | `src/handler.py`: inbound via SNS, replies via `pinpoint-sms-voice-v2 SendTextMessage` (toll-free number pending carrier registration) |
 | Amazon SES | `src/agent.py`: `email_report` tool, `sesv2 SendEmail` |
 | Amazon Polly | `src/handler.py`: web chat audio + WhatsApp voice notes (bilingual voice stitching) |
+| Amazon Transcribe | `src/handler.py`: understands inbound WhatsApp voice notes (fetched with `GetWhatsAppMessageMedia`, language detected automatically); enable on an existing stack with `scripts/enable-voice.sh` |
 | Amazon Bedrock (recommended pairing) | `src/agent.py`: Converse API tool-use loop |
 
 ## Repository layout
