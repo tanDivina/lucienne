@@ -31,6 +31,9 @@ ALLOWED_REPORT_RECIPIENTS = [
 REPORT_BASE_URL = os.environ.get(
     "REPORT_BASE_URL", "https://3aeprrnzvxpaum6k7vq4qccvd40pcngi.lambda-url.us-east-1.on.aws")
 REPORT_TTL_DAYS = 30
+# Email caps: per recipient per day (no one can be flooded) and for the whole account.
+MAX_EMAILS_PER_RECIPIENT_DAY = 3
+MAX_EMAILS_PER_DAY = 100
 MAX_TOOL_ROUNDS = 8
 MAX_HISTORY_MESSAGES = 20
 
@@ -226,6 +229,26 @@ def load_report(rid: str) -> str | None:
     return item["html"] if item else None
 
 
+def _within_email_caps(to: str) -> bool:
+    """Count this send against the daily caps; False when either cap is reached.
+    Get + put (the role has no UpdateItem); an occasional race only lets one extra through."""
+    if not TABLE:
+        return True
+    day = time.strftime("%Y%m%d", time.gmtime())
+    table = _ddb.Table(TABLE)
+    keys = [(f"emailcap:{day}:{to.lower()}", MAX_EMAILS_PER_RECIPIENT_DAY), (f"emailcap:{day}:all", MAX_EMAILS_PER_DAY)]
+    counts = []
+    for key, cap in keys:
+        item = table.get_item(Key={"session_id": key}).get("Item") or {}
+        n = int(item.get("count", 0))
+        if n >= cap:
+            return False
+        counts.append(n)
+    for (key, _), n in zip(keys, counts):
+        table.put_item(Item={"session_id": key, "count": n + 1, "expires_at": int(time.time()) + 2 * 24 * 3600})
+    return True
+
+
 def email_report(subject: str, html_body: str, to: str = "") -> dict:
     page = _lucienne_email(subject, html_body)
     out: dict = {"view_url": _store_report(page)}
@@ -236,6 +259,12 @@ def email_report(subject: str, html_body: str, to: str = "") -> dict:
             **out, "sent": False,
             "note": "This demo runs in the SES sandbox and can only email verified addresses. "
                     "Say so in one short clause and give the user the link instead.",
+        }
+    if not _within_email_caps(to):
+        return {
+            **out, "sent": False,
+            "note": "Daily email limit reached for this address. Say so in one short clause "
+                    "and give the user the link instead.",
         }
     _ses.send_email(
         FromEmailAddress=REPORT_FROM,
