@@ -115,6 +115,8 @@ async function main() {
   });
 
   // ── channels: WhatsApp, web chat (live) and SMS/RCS (almost ready) ───────
+  // Recorded alone, the page is still about:blank (meet loads it inside its scene).
+  if (page.url() === 'about:blank') await fresh();
   await scene('site_channels', len('n_hub', 1.2), async (now) => {
     await page.mouse.move(1500, 300, { steps: 10 });
     await scrollTo(await topOf('#channels', 140), 1600);

@@ -22,7 +22,7 @@
     "n_email": "Ask for the full report, and a developer briefing lands in your inbox. Every finding with impact, evidence, and the exact fix.",
     "n_hub": "One copilot, every channel. The same agent and the same tools answer on WhatsApp, web chat and email, with SMS wired and waiting on carrier registration.",
     "n_arch": "Under the hood, it is all AWS. Messages come in through End User Messaging, into SNS and Lambda. Amazon Bedrock runs the agent loop, DynamoDB remembers the conversation, Polly gives her the voice, and SES delivers the report.",
-    "n_biz_fallback": "Hero Apps is a real customer, registered as an ACE opportunity. Next up: the tour operators and small businesses we already build websites for.",
+    "n_biz_fallback": "Lucienne already audits Papito's Nature Tours, my partner's boat tour company in Bocas del Toro. She's registered as an ACE opportunity, and next come the tour operators and small businesses I already build websites for.",
     "n_close": "Lucienne. Drop her a link. She'll bring some clarity.",
     "n_numbers": "Measured on the live agent: about three cents per reply, voice note included. And it runs in the business's own AWS account."
   }

@@ -68,11 +68,11 @@ const segs = [];
 const next = () => path.join(SEG, `${String(++n).padStart(2, '0')}.mp4`);
 
 // A recorded clip (card or site scene) with narration; held on its last frame if the voice runs longer.
-function clip(file, line, { lead = LEAD, tail = 0.6 } = {}) {
+function clip(file, line, { lead = LEAD, tail = 0.6, own = false } = {}) {
   const v = path.join(WORK, file);
   const need = line ? lead + dur(A(line)) + tail : 0;
   const len = Math.max(dur(v), need); const out = next();
-  const cs = line ? [{ file: A(line), t: lead }] : [];
+  const cs = [...(line ? [{ file: A(line), t: lead }] : []), ...(own ? [{ file: v, t: 0 }] : [])];
   ff(['-i', v, ...cs.flatMap((c) => ['-i', c.file]), '-filter_complex',
     `[0:v]tpad=stop_mode=clone:stop_duration=${Math.max(0, len - dur(v) + 0.1).toFixed(3)},trim=0:${len.toFixed(3)},setpts=PTS-STARTPTS[v];` + mix(cs, 1, len),
     '-map', '[v]', '-map', '[aout]', ...V_OUT, ...A_OUT, '-t', len.toFixed(3), out]);
@@ -91,13 +91,17 @@ function slate(label, script, seconds) {
   segs.push(out); console.log(`… ${path.basename(out)} SLATE ${label} ${seconds}s`);
 }
 
-function personal(base, label, script, seconds) {
+// Portrait clips: centred, the side strips filled with a blurred copy of the clip,
+// plus an optional transparent overlay (record_intro.cjs) on top.
+function personal(base, label, script, seconds, overlay) {
   const f = find(base);
   if (!f) return slate(label, script, seconds);
   const len = dur(f); const out = next();
-  const v = `[0:v]scale=1920:1080:force_original_aspect_ratio=decrease:flags=lanczos,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=${PAPER},setsar=1,format=yuv420p[v]`;
+  const ov = overlay && fs.existsSync(path.join(WORK, overlay)) ? path.join(WORK, overlay) : null;
+  const v = `[0:v]split[bg0][fg0];[bg0]scale=1920:-2,crop=1920:1080:0:(ih-1080)*0.55,boxblur=28:2,eq=brightness=-0.07:saturation=0.85[bg];` +
+    `[fg0]scale=-2:1080:flags=lanczos[fg];[bg][fg]overlay=(W-w)/2:0` + (ov ? `[base];[base][1:v]overlay=0:0:eof_action=pass` : '') + `,setsar=1,format=yuv420p[v]`;
   const a = hasAudio(f) ? `[0:a]aformat=sample_rates=48000:channel_layouts=stereo,loudnorm=I=-16:TP=-1.5[aout]` : `anullsrc=r=48000:cl=stereo,atrim=0:${len}[aout]`;
-  ff(['-i', f, '-filter_complex', `${v};${a}`, '-map', '[v]', '-map', '[aout]', ...V_OUT, ...A_OUT, '-t', len.toFixed(3), out]);
+  ff(['-i', f, ...(ov ? ['-i', ov] : []), '-filter_complex', `${v};${a}`, '-map', '[v]', '-map', '[aout]', ...V_OUT, ...A_OUT, '-t', len.toFixed(3), out]);
   segs.push(out); console.log(`✓ ${path.basename(out)} personal ${path.basename(f)} ${len.toFixed(1)}s`);
 }
 
@@ -214,8 +218,10 @@ function email() {
 }
 
 fs.readdirSync(SEG).forEach((f) => fs.unlinkSync(path.join(SEG, f)));
+// Cold open: lamplight reveal + her real WhatsApp reply landing (record_intro.cjs).
+if (fs.existsSync(path.join(WORK, 'intro', 'cold.mp4'))) clip('intro/cold.mp4', null, { own: true, tail: 0 });
 personal('l1_open', 'Your clip L1: opener, about 10 s',
-  "I build websites for small businesses in Panama. Almost none of them can afford an SEO agency, and the reports they do get are unreadable.", 10);
+  "I build websites for small businesses in Panama. Almost none of them can afford an SEO agency.", 10, 'intro/overlay.mov');
 clip('cards/hook.mp4', 'n_hook');
 clip('cards/hook2.mp4', 'n_hook2');
 clip('site/site_meet.mp4', 'n_meet', { lead: 1.6 });
@@ -226,7 +232,7 @@ clip('site/site_channels.mp4', 'n_hub');
 clip('cards/arch.mp4', 'n_arch');
 clip('cards/numbers.mp4', 'n_numbers');
 // Dorien's partner story if filmed, else the partner card with the garden-voice line.
-if (find('l2_story')) personal('l2_story', '', '', 0);
+if (find('l2_story')) personal('l2_story', '', '', 0, 'intro/overlay2.mov');
 else clip('cards/biz.mp4', 'n_biz_fallback');
 clip('cards/end.mp4', 'n_close', { tail: 1.6 });
 
