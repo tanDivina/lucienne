@@ -131,6 +131,7 @@
     max-width: 680px; margin: 8px auto 0; color: var(--muted); font-size: 12px;
     text-align: center; font-family: system-ui, sans-serif;
   }
+  .t a { color: inherit; text-decoration: underline; overflow-wrap: anywhere; }
 </style>
 </head>
 <body>
@@ -257,12 +258,20 @@ if (SR) {
 }
 
 // Lucienne writes her French in _underscores_, WhatsApp-style; show it as italics.
+// Links (her report pages) become clickable.
 function setText(el, text) {
   el.textContent = '';
-  text.split(/_([^_\n]{1,80})_/).forEach((part, i) => {
-    if (!part) return;
-    if (i % 2) { const em = document.createElement('em'); em.textContent = part; el.appendChild(em); }
-    else el.appendChild(document.createTextNode(part));
+  text.split(/(https?:\/\/[^\s<>"]+)/).forEach((chunk, j) => {
+    if (j % 2) {
+      const a = document.createElement('a');
+      a.href = a.textContent = chunk; a.target = '_blank'; a.rel = 'noopener';
+      el.appendChild(a); return;
+    }
+    chunk.split(/_([^_\n]{1,80})_/).forEach((part, i) => {
+      if (!part) return;
+      if (i % 2) { const em = document.createElement('em'); em.textContent = part; el.appendChild(em); }
+      else el.appendChild(document.createTextNode(part));
+    });
   });
 }
 

@@ -11,6 +11,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import secrets
 import time
 
 import boto3
@@ -25,6 +26,11 @@ ALLOWED_REPORT_RECIPIENTS = [
     for e in os.environ.get("ALLOWED_REPORT_RECIPIENTS", "").split(",")
     if e.strip()
 ]
+# Reports are also kept as a web page, so anyone (judges included) can read them
+# without an inbox: GET <REPORT_BASE_URL>/r/<id>, served by handler.py.
+REPORT_BASE_URL = os.environ.get(
+    "REPORT_BASE_URL", "https://3aeprrnzvxpaum6k7vq4qccvd40pcngi.lambda-url.us-east-1.on.aws")
+REPORT_TTL_DAYS = 30
 MAX_TOOL_ROUNDS = 8
 MAX_HISTORY_MESSAGES = 20
 
@@ -68,7 +74,16 @@ already have so they see you looked. Quote searches as people type them, never \
 invent search volumes, and never claim content is missing unless the sitemap shows it. \
 Don't name organizations, people or places that appear in neither the site nor the \
 search phrases. \
-If there is no readable sitemap, say you could only see the homepage.
+If there is no readable sitemap, say you could only see the homepage. \
+After content advice, offer the plan by email instead of the developer report: "Want \
+this as a content plan by email?" When they say yes and you have their address, call \
+email_report with the subject "Content plan for <site>" and a content plan in plain \
+semantic HTML, under about 700 words: a \
+one-line summary of what the site already covers well; then each gap as its own \
+section with the exact search phrase people type, a suggested page title, a short \
+outline (3-5 subheadings), and which existing page should link to it; then any \
+existing pages worth strengthening; end with the order to write them in. Use only \
+what the tools returned.
 - Lead with the two or three findings that matter most, ranked by impact, and say WHY \
 each matters in plain words. Mention what is healthy in one short clause so the owner \
 knows what not to touch.
@@ -78,6 +93,11 @@ address, call email_report with a focused, well-structured HTML report for devel
 each finding ranked by impact with its evidence and the exact fix, in plain semantic HTML \
 (headings, lists, short paragraphs, no inline styling). Keep it under about 700 words so \
 it arrives quickly.
+- Every report or plan you deliver also becomes a web page: email_report returns \
+view_url. Always give that link in your reply, on its own line, as the plain URL \
+(no brackets or markdown). If they'd rather not share an email address, call \
+email_report without one and just send the link. If the email could not be sent, \
+say so briefly and point to the link; never ask them to verify anything.
 - Finish the work within this reply: never say you are "preparing" or "will send" \
 something. Either call the tool now and confirm the result, or ask for what's missing.
 - If a tool errors, say plainly what you could and couldn't check. Never invent data.
@@ -172,37 +192,60 @@ TOOLS = [
     {
         "toolSpec": {
             "name": "email_report",
-            "description": "Send the full developer briefing as an HTML email via Amazon SES. Only use after the user asked for the report and gave an address.",
+            "description": "Deliver a developer briefing or content plan: always saves it as a web page and returns view_url; also emails it via Amazon SES when an address is given. Only use after the user asked for it.",
             "inputSchema": {"json": {
                 "type": "object",
                 "properties": {
-                    "to": {"type": "string", "description": "Recipient email address"},
+                    "to": {"type": "string", "description": "Recipient email address; omit when the user just wants the link"},
                     "subject": {"type": "string"},
                     "html_body": {"type": "string", "description": "Complete HTML report"},
                 },
-                "required": ["to", "subject", "html_body"],
+                "required": ["subject", "html_body"],
             }},
         }
     },
 ]
 
 
-def email_report(to: str, subject: str, html_body: str) -> dict:
+def _store_report(page: str) -> str | None:
+    if not TABLE:
+        return None
+    rid = secrets.token_hex(6)  # hex: no underscores to clash with WhatsApp italics
+    _ddb.Table(TABLE).put_item(Item={
+        "session_id": f"report:{rid}",
+        "html": page,
+        "expires_at": int(time.time()) + REPORT_TTL_DAYS * 24 * 3600,
+    })
+    return f"{REPORT_BASE_URL}/r/{rid}"
+
+
+def load_report(rid: str) -> str | None:
+    if not TABLE or not re.fullmatch(r"[0-9a-f]{12}", rid):
+        return None
+    item = _ddb.Table(TABLE).get_item(Key={"session_id": f"report:{rid}"}).get("Item")
+    return item["html"] if item else None
+
+
+def email_report(subject: str, html_body: str, to: str = "") -> dict:
+    page = _lucienne_email(subject, html_body)
+    out: dict = {"view_url": _store_report(page)}
+    if not to:
+        return {**out, "sent": False, "note": "No address given: share the link."}
     if ALLOWED_REPORT_RECIPIENTS and to.lower() not in ALLOWED_REPORT_RECIPIENTS:
         return {
-            "error": "This demo runs in the SES sandbox and can only email verified "
-                     "addresses. Tell the user their address isn't verified for the demo yet.",
-            "allowed": ALLOWED_REPORT_RECIPIENTS,
+            **out, "sent": False,
+            "note": "This demo runs in the SES sandbox and can only email verified addresses. "
+                    "Say so in one short clause and give the user the link instead.",
         }
     _ses.send_email(
         FromEmailAddress=REPORT_FROM,
         Destination={"ToAddresses": [to]},
         Content={"Simple": {
             "Subject": {"Data": subject},
-            "Body": {"Html": {"Data": _lucienne_email(subject, html_body)}},
+            "Body": {"Html": {"Data": page}},
         }},
     )
-    return {"sent": True, "to": to}
+    return {**out, "sent": True, "to": to}
 
 
 # Every report goes out in Lucienne's house style, whatever HTML the model wrote:
@@ -240,22 +283,24 @@ def _restyle(html: str) -> str:
 
 
 def _lucienne_email(subject: str, html_body: str) -> str:
-    body = _restyle(html_body)
+    # The subject is already the card's title, so drop the model's own leading h1.
+    body = re.sub(r"(?is)^\s*<h1\b[^>]*>.*?</h1>\s*", "", _restyle(html_body))
     title = re.sub(r"[<>&\"]", "", subject)
+    label = "Content plan" if "content plan" in subject.lower() else "Developer briefing"
     return f"""<!doctype html>
 <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="light"><title>{title}</title></head>
 <body style="margin:0;padding:0;background:#f3efe1;">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f3efe1;">
 <tr><td align="center" style="padding:32px 14px;">
-  <table role="presentation" width="640" cellpadding="0" cellspacing="0" style="max-width:640px;width:100%;">
+  <table role="presentation" cellpadding="0" cellspacing="0" style="max-width:640px;width:100%;table-layout:fixed;">
     <tr><td align="center" style="padding:0 0 22px;">
       <img src="{_EMAIL_ASSETS}/apple-touch-icon.png" width="88" height="88" alt="Lucienne"
         style="display:block;border-radius:50%;border:4px solid #ecdcae;">
       <div style="font-family:{_SERIF};font-size:30px;color:#221c13;margin-top:12px;">Lucienne</div>
-      <div style="font-family:{_SERIF};font-size:12px;letter-spacing:3px;text-transform:uppercase;color:#8a6d1f;margin-top:4px;">Developer briefing</div>
+      <div style="font-family:{_SERIF};font-size:12px;letter-spacing:3px;text-transform:uppercase;color:#8a6d1f;margin-top:4px;">{label}</div>
     </td></tr>
-    <tr><td style="background:#faf7ec;border:1px solid #e4dcc6;border-radius:14px;padding:30px 34px;">
+    <tr><td style="background:#faf7ec;border:1px solid #e4dcc6;border-radius:14px;padding:30px 34px;overflow-wrap:anywhere;">
       <div style="font-family:{_SERIF};font-size:22px;line-height:1.3;color:#221c13;margin:0 0 18px;">{title}</div>
       {body}
     </td></tr>

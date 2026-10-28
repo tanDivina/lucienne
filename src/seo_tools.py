@@ -119,6 +119,8 @@ def inspect_page(url: str) -> dict:
         try:
             data = json.loads(block)
             items = data if isinstance(data, list) else [data]
+            # Yoast and most generators wrap entities in a top-level @graph.
+            items += [g for i in items if isinstance(i, dict) for g in (i.get("@graph") or [])]
             for item in items:
                 if isinstance(item, dict):
                     t = item.get("@type")

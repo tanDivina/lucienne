@@ -18,7 +18,7 @@ import uuid
 
 import boto3
 
-from agent import run_turn
+from agent import load_report, run_turn
 
 ORIGINATION_IDENTITY = os.environ.get("ORIGINATION_IDENTITY", "")
 _sms = boto3.client("pinpoint-sms-voice-v2")
@@ -226,7 +226,7 @@ def _speechify(text: str) -> str:
 
 def _speech_excerpt(text: str) -> str:
     """Speak a short headline, not the whole report; the chat holds the details."""
-    text = text.strip()
+    text = re.sub(r":?\s*https?://\S+", " in your chat.", text).strip()  # links are for reading, not hearing
     if len(text) <= 360:
         return text
     out = ""
@@ -321,6 +321,14 @@ def _handle_http(event: dict) -> dict:
         return _http_response(204, "")
 
     if method == "GET":
+        m = re.fullmatch(r"/r/([0-9a-f]{12})/?", path)
+        if m:
+            page = load_report(m.group(1))
+            if page:
+                return {"statusCode": 200, "body": page, "headers": {
+                    "content-type": "text/html; charset=utf-8", "x-robots-tag": "noindex",
+                    "cache-control": "private, max-age=3600"}}
+            return _http_response(404, "This report has expired or the link is incomplete.", "text/plain")
         if "/assets/" in path:
             # basename only: no traversal, no subdirectories
             asset = _WEB_DIR / "assets" / pathlib.PurePosixPath(path).name
