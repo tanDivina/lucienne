@@ -258,3 +258,75 @@ def core_web_vitals(url: str, strategy: str = "mobile") -> dict:
     else:
         out["field_data_p75"] = "no CrUX field data for this URL (low traffic)"
     return out
+
+
+def _sitemap_locs(url: str, depth: int = 0) -> list[str]:
+    body, _, _, _, _ = _get(url, max_bytes=2_000_000)
+    xml = body.decode("utf-8", errors="replace")
+    locs = [l.strip() for l in re.findall(r"<loc>\s*(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?\s*</loc>", xml, re.S)]
+    if "<sitemapindex" in xml and depth == 0:
+        pages: list[str] = []
+        for child in locs[:5]:  # page sitemaps first is the common order; enough for a small business
+            try:
+                pages += _sitemap_locs(child, 1)
+            except Exception:  # noqa: BLE001
+                continue
+        return pages
+    return locs
+
+
+def _suggest(query: str, lang: str) -> list[str]:
+    api = "https://suggestqueries.google.com/complete/search?" + urllib.parse.urlencode(
+        {"client": "firefox", "hl": lang, "ie": "utf-8", "oe": "utf-8", "q": query})
+    body, _, _, _, _ = _get(api, max_bytes=50_000)
+    data = json.loads(body.decode("utf-8", errors="replace"))
+    return [s for s in data[1] if s.strip().lower() != query.strip().lower()]
+
+
+def content_ideas(url: str, topics: list[str], lang: str = "en") -> dict:
+    """What the site already covers (sitemap pages) next to what people type into
+    Google about its topics (Autocomplete), so content advice targets real gaps."""
+    from concurrent.futures import ThreadPoolExecutor
+
+    url = _normalize_url(url)
+    parts = urllib.parse.urlsplit(url)
+    root = f"{parts.scheme}://{parts.netloc}"
+    out: dict = {"site": root}
+
+    sitemaps = [root + "/sitemap.xml", root + "/sitemap_index.xml"]
+    try:
+        robots = _get(root + "/robots.txt", max_bytes=100_000)[0].decode("utf-8", errors="replace")
+        sitemaps = re.findall(r"(?im)^\s*Sitemap:\s*(\S+)", robots) + sitemaps
+    except Exception:  # noqa: BLE001
+        pass
+    for sm in sitemaps:
+        try:
+            locs = list(dict.fromkeys(_sitemap_locs(sm)))
+        except Exception:  # noqa: BLE001
+            continue
+        if locs:
+            paths = [urllib.parse.urlsplit(l).path or "/" for l in locs]
+            out["existing_pages"] = {"sitemap": sm, "count": len(paths), "paths": paths[:150]}
+            break
+    else:
+        out["existing_pages"] = {"error": "no readable sitemap; existing coverage unknown"}
+
+    seeds = [t.strip() for t in topics if t.strip()][:4]
+    queries = [q for s in seeds for q in (s, s + " ")]
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        results = list(pool.map(lambda q: (q, _safe(lambda: _suggest(q, lang))), queries))
+    searches: dict[str, list[str]] = {}
+    for q, res in results:
+        if isinstance(res, list):
+            seen = searches.setdefault(q.strip(), [])
+            seen += [s for s in res if s not in seen]
+    out["google_autocomplete"] = searches or {"error": "autocomplete unavailable"}
+    out["note"] = "Autocomplete shows phrases people really search, not their volume."
+    return out
+
+
+def _safe(fn):
+    try:
+        return fn()
+    except Exception as e:  # noqa: BLE001
+        return {"error": str(e)}

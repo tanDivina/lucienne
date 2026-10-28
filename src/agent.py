@@ -15,7 +15,7 @@ import time
 
 import boto3
 
-from seo_tools import check_robots_sitemap, core_web_vitals, inspect_page
+from seo_tools import check_robots_sitemap, content_ideas, core_web_vitals, inspect_page
 
 MODEL_ID = os.environ.get("MODEL_ID", "us.anthropic.claude-sonnet-4-5-20250929-v1:0")
 TABLE = os.environ.get("SESSIONS_TABLE", "")
@@ -57,6 +57,18 @@ Working method:
 - When the user gives you a URL, call inspect_page first. Call check_robots_sitemap \
 when indexing could be at play, and core_web_vitals when speed matters or the user \
 asks. Don't run every tool by reflex; fetch what the conversation needs.
+- When the owner asks what to write about, which pages to add, or how to get more \
+visitors through content: inspect_page first if you haven't, then call content_ideas \
+with 2-4 short seed topics taken from what the page itself says it offers, in the \
+site's own language. Compare the autocomplete phrases with existing_pages and suggest \
+only real gaps: topics people search that no page covers yet. Before calling something \
+a gap, scan every path for one that plausibly covers it (in either language); if one \
+does, it is not a gap - at most suggest strengthening that page. Name a few pages they \
+already have so they see you looked. Quote searches as people type them, never \
+invent search volumes, and never claim content is missing unless the sitemap shows it. \
+Don't name organizations, people or places that appear in neither the site nor the \
+search phrases. \
+If there is no readable sitemap, say you could only see the homepage.
 - Lead with the two or three findings that matter most, ranked by impact, and say WHY \
 each matters in plain words. Mention what is healthy in one short clause so the owner \
 knows what not to touch.
@@ -139,6 +151,21 @@ TOOLS = [
                     "strategy": {"type": "string", "enum": ["mobile", "desktop"]},
                 },
                 "required": ["url"],
+            }},
+        }
+    },
+    {
+        "toolSpec": {
+            "name": "content_ideas",
+            "description": "For content advice: list the pages the site already has (from its sitemap) and the phrases people actually type into Google about the given topics (Google Autocomplete). Use to suggest new pages or articles that fill real gaps.",
+            "inputSchema": {"json": {
+                "type": "object",
+                "properties": {
+                    "url": {"type": "string"},
+                    "topics": {"type": "array", "items": {"type": "string"}, "description": "2-4 short seed searches, e.g. 'manatee tour bocas del toro'"},
+                    "lang": {"type": "string", "description": "Language code of the audience, e.g. en or es"},
+                },
+                "required": ["url", "topics"],
             }},
         }
     },
@@ -249,6 +276,7 @@ _LOCAL_TOOLS = {
     "inspect_page": lambda args: inspect_page(**args),
     "check_robots_sitemap": lambda args: check_robots_sitemap(**args),
     "core_web_vitals": lambda args: core_web_vitals(**args),
+    "content_ideas": lambda args: content_ideas(**args),
     "email_report": lambda args: email_report(**args),
 }
 
