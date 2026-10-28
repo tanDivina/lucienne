@@ -43,6 +43,9 @@ Measured on the live agent: about 1 to 2 cents of AI per reply, and about 3 cent
 ## What I learned
 Small business owners act on a few findings ranked by impact and sized for a chat bubble. That mattered more than adding checks.
 
+## How I'll sell it
+Lucienne is an add-on for clients I already build websites for, not a new sale from scratch. Each client gets a first audit as part of setup, then a monthly managed plan: scheduled re-checks, a WhatsApp message when something on their site breaks, and the developer briefing when a fix is needed. At about 3 cents a reply, the AWS cost is small next to an agency retainer, and the agent and its data stay in an AWS account.
+
 ## What's next ([2:34](https://youtu.be/5yWoRUs01sM?t=154))
 - Papito's Nature Tours, whose site she is already auditing, then the tour operators and small businesses I build websites for.
 - SMS and RCS once toll-free registration clears.
