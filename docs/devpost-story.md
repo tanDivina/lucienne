@@ -1,25 +1,25 @@
 ## Inspiration
-I build websites for small businesses in Bocas del Toro, Panama, through my studio Hero Apps, and almost none of them can afford an SEO agency (0:03). A retainer runs about $3,000 a month (Ahrefs puts the average at $2,819, Arc Intermedia at about $3,200). The free tools hand owners a dashboard of red numbers nobody explains, and 57% of small businesses have no SEO strategy at all, according to an UpCity/Pollfish survey of 600 US and Canadian small businesses (0:12). Page two of Google gets about 0.17% of clicks (Sistrix, 80 million keywords). My clients don't open dashboards. They live in WhatsApp, so I made the audit a WhatsApp conversation.
+I build websites for small businesses in Bocas del Toro, Panama, through my studio Hero Apps, and almost none of them can afford an SEO agency. A retainer runs about $3,000 a month (Ahrefs puts the average at $2,819, Arc Intermedia at about $3,200). The free tools hand owners a dashboard of red numbers nobody explains, and 57% of small businesses have no SEO strategy at all, according to an UpCity/Pollfish survey of 600 US and Canadian small businesses. Page two of Google gets about 0.17% of clicks (Sistrix, 80 million keywords). My clients don't open dashboards. They live in WhatsApp, so I made the audit a WhatsApp conversation.
 
 Hero Apps is my own company, and it is the customer on the ACE opportunity. Lucienne's first outside site is my partner's boat tour company, Papito's Nature Tours.
 
-The demo video is at the top of this page (2:51). The timestamps below point to the moment in it.
+Watch the demo (2:51): https://youtu.be/5yWoRUs01sM. Each timestamp below opens the video at that moment.
 
 ## What it does
-Lucienne is a French SEO inspector you can text (0:30). Send her a website address on WhatsApp and she inspects the live page, then explains what she found in plain words, ranked by impact and short enough for a chat bubble. In the demo (0:36) I send her panacacao.com, a site I built, from my own phone:
+Lucienne is a French SEO inspector you can text ([0:30](https://youtu.be/5yWoRUs01sM?t=30)). Send her a website address on WhatsApp and she inspects the live page, then explains what she found in plain words, ranked by impact and short enough for a chat bubble. In the demo ([0:36](https://youtu.be/5yWoRUs01sM?t=36)) I send her panacacao.com, a site I built, from my own phone:
 
-- She fetches the live page and replies with the audit (0:41). The real reply took 13.5 seconds.
-- She follows each reply with a voice note (0:48). French phrases are spoken by a French voice and the rest in English.
-- I ask her to check the speed (1:05). She runs Google PageSpeed Insights and reports a mobile Largest Contentful Paint of 5.9 seconds, with why it matters (1:08). That reply took 22.5 seconds.
+- She fetches the live page and replies with the audit ([0:41](https://youtu.be/5yWoRUs01sM?t=41)). The real reply took 13.5 seconds.
+- She follows each reply with a voice note ([0:48](https://youtu.be/5yWoRUs01sM?t=48)). French phrases are spoken by a French voice and the rest in English.
+- I ask her to check the speed ([1:05](https://youtu.be/5yWoRUs01sM?t=65)). She runs Google PageSpeed Insights and reports a mobile Largest Contentful Paint of 5.9 seconds, with why it matters ([1:08](https://youtu.be/5yWoRUs01sM?t=68)). That reply took 22.5 seconds.
 - She remembers the conversation, so "why does that matter?" or "how do I fix it?" gets an answer in context.
-- The same agent runs a web chat with voice and microphone input (1:29). Her lantern glows while she inspects.
-- Ask for the full report and an HTML developer briefing arrives by email through Amazon SES (1:41), with each finding's impact, evidence and fix, ready to forward to whoever builds the site.
+- The same agent runs a web chat with voice and microphone input ([1:29](https://youtu.be/5yWoRUs01sM?t=89)). Her lantern glows while she inspects.
+- Ask for the full report and an HTML developer briefing arrives by email through Amazon SES ([1:41](https://youtu.be/5yWoRUs01sM?t=101)), with each finding's impact, evidence and fix, ready to forward to whoever builds the site.
 
-WhatsApp, the web chat and email are live (1:52). SMS and RCS go through the same handler and are waiting on toll-free carrier registration.
+WhatsApp, the web chat and email are live ([1:52](https://youtu.be/5yWoRUs01sM?t=112)). SMS and RCS go through the same handler and are waiting on toll-free carrier registration.
 
 Her checks: HTTP status, redirects, time to first byte, page weight, title, meta description, canonical, robots meta, headings, image alt text, Open Graph, JSON-LD and noindex on the page; robots.txt and sitemap health; and Core Web Vitals from PageSpeed Insights, with lab and real-user data.
 
-## How I built it (2:05)
+## How I built it ([2:05](https://youtu.be/5yWoRUs01sM?t=125))
 - AWS End User Messaging Social receives WhatsApp messages and delivers them through Amazon SNS to an AWS Lambda written in Python with only the standard library.
 - The Lambda runs a Bedrock Converse tool-use loop with Claude Sonnet 4.5 and four tools: `inspect_page`, `check_robots_sitemap`, `core_web_vitals` and `email_report`.
 - Replies go back through `SendWhatsAppMessage`. Amazon Polly renders the voice note, which is uploaded with `PostWhatsAppMessageMedia` (staged in Amazon S3) and sent as audio.
@@ -29,7 +29,7 @@ Her checks: HTTP status, redirects, time to first byte, page weight, title, meta
 
 AWS CDS services used at runtime: AWS End User Messaging Social (WhatsApp) and Amazon SES, with AWS End User Messaging SMS/RCS wired. Plus Amazon Bedrock, Polly, Lambda, SNS, DynamoDB and S3.
 
-## Cost (2:23)
+## Cost ([2:23](https://youtu.be/5yWoRUs01sM?t=143))
 Measured on the live agent: about 1 to 2 cents of AI per reply, and about 3 cents with WhatsApp delivery and a voice note, at list prices. Billing is per use, with no monthly chatbot platform fee, and the agent, its prompts and its conversation data live in the business's own AWS account.
 
 ## Challenges I ran into
@@ -41,7 +41,7 @@ Measured on the live agent: about 1 to 2 cents of AI per reply, and about 3 cent
 ## What I learned
 Small business owners act on a few findings ranked by impact and sized for a chat bubble. That mattered more than adding checks.
 
-## What's next (2:34)
+## What's next ([2:34](https://youtu.be/5yWoRUs01sM?t=154))
 - Papito's Nature Tours, whose site she is already auditing, then the tour operators and small businesses I build websites for.
 - SMS and RCS once toll-free registration clears.
 - Scheduled re-checks that message the owner when something on the site breaks.
