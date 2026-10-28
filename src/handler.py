@@ -14,6 +14,8 @@ import json
 import os
 import pathlib
 import re
+import time
+import urllib.request
 import uuid
 
 import boto3
@@ -39,6 +41,7 @@ def _handle_inbound_message(record: dict) -> None:
 
 _social = None
 _s3 = None
+_transcribe = None
 
 
 def _social_client():
@@ -46,6 +49,13 @@ def _social_client():
     if _social is None:
         _social = boto3.client("socialmessaging")
     return _social
+
+
+def _transcribe_client():
+    global _transcribe
+    if _transcribe is None:
+        _transcribe = boto3.client("transcribe")
+    return _transcribe
 
 
 def _s3_client():
@@ -81,11 +91,15 @@ def _handle_whatsapp(msg: dict) -> None:
                 print("whatsapp event missing sender or origination:", json.dumps(msg)[:500])
                 continue
             text = ((inbound.get("text") or {}).get("body") or "").strip()
+            if not text and inbound.get("type") == "audio":
+                heard = _transcribe_voice_note((inbound.get("audio") or {}).get("id", ""), origination)
+                if heard:
+                    text = "[Voice note, transcribed:] " + heard
             if text:
                 reply = run_turn(session_id=f"wa:{sender}", channel="whatsapp", user_text=text)
-            else:  # image/audio/sticker/...
-                reply = ("Bonjour! For now I only read text here - "
-                         "send me a website address and I will inspect it.")
+            else:  # image/sticker/... or a voice note we could not transcribe
+                reply = ("Bonjour! I could not read that one - "
+                         "send me a website address as text and I will inspect it.")
             # WhatsApp caps a text message at 4096 chars.
             for chunk in [reply[i:i + 3800] for i in range(0, len(reply), 3800)] or ["..."]:
                 _social_client().send_whatsapp_message(
@@ -101,6 +115,55 @@ def _handle_whatsapp(msg: dict) -> None:
                 )
             if text:
                 _send_whatsapp_voice(origination, sender, reply)
+
+
+_AUDIO_FORMATS = {"ogg": "ogg", "mpeg": "mp3", "mp4": "mp4", "amr": "amr"}
+
+
+def _transcribe_voice_note(media_id: str, origination: str) -> str:
+    """A WhatsApp voice note as text, via S3 and Amazon Transcribe. Returns "" on any failure."""
+    bucket = os.environ.get("WA_MEDIA_BUCKET", "")
+    if not media_id or not bucket:
+        return ""
+    job = f"lucienne-{media_id}-{int(time.time())}"[:200]
+    started = False
+    try:
+        # EUM treats the key as a prefix and appends "<mediaId>.<ext>" itself.
+        media = _social_client().get_whatsapp_message_media(
+            mediaId=media_id, originationPhoneNumberId=origination,
+            destinationS3File={"bucketName": bucket, "key": "inbound/"})
+        mime = (media.get("mimeType") or "audio/ogg").split(";")[0]
+        fmt = _AUDIO_FORMATS.get(mime.split("/")[-1])
+        if not fmt:
+            print("voice note: unsupported type", mime)
+            return ""
+        _transcribe_client().start_transcription_job(
+            TranscriptionJobName=job, MediaFormat=fmt,
+            Media={"MediaFileUri": f"s3://{bucket}/inbound/{media_id}.{fmt}"},
+            IdentifyLanguage=True, LanguageOptions=["en-US", "fr-FR", "es-US", "nl-NL"])
+        started = True
+        deadline = time.time() + 60
+        while time.time() < deadline:
+            time.sleep(1.5)
+            j = _transcribe_client().get_transcription_job(TranscriptionJobName=job)["TranscriptionJob"]
+            if j["TranscriptionJobStatus"] == "FAILED":
+                print("voice note transcription failed:", j.get("FailureReason"))
+                return ""
+            if j["TranscriptionJobStatus"] == "COMPLETED":
+                with urllib.request.urlopen(j["Transcript"]["TranscriptFileUri"], timeout=10) as r:
+                    data = json.load(r)
+                return " ".join(t["transcript"] for t in data["results"]["transcripts"]).strip()
+        print("voice note transcription timed out")
+        return ""
+    except Exception as exc:
+        print("voice note error:", exc)
+        return ""
+    finally:
+        if started:  # the guest's words shouldn't outlive the reply
+            try:
+                _transcribe_client().delete_transcription_job(TranscriptionJobName=job)
+            except Exception:
+                pass
 
 
 def _send_whatsapp_voice(origination: str, recipient: str, reply: str) -> None:

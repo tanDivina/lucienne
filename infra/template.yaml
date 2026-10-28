@@ -97,7 +97,10 @@ Resources:
                 Action: [ "sms-voice:SendTextMessage", "sms-voice:SendMediaMessage" ]
                 Resource: "*"
               - Effect: Allow
-                Action: [ "social-messaging:SendWhatsAppMessage", "social-messaging:PostWhatsAppMessageMedia" ]
+                Action: [ "social-messaging:SendWhatsAppMessage", "social-messaging:PostWhatsAppMessageMedia", "social-messaging:GetWhatsAppMessageMedia" ]
+                Resource: "*"
+              - Effect: Allow
+                Action: [ "transcribe:StartTranscriptionJob", "transcribe:GetTranscriptionJob", "transcribe:DeleteTranscriptionJob" ]
                 Resource: "*"
               - Effect: Allow
                 Action: [ "s3:PutObject", "s3:GetObject" ]
